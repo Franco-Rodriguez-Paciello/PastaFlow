@@ -28,7 +28,7 @@ public class ProductoConfiguration : IEntityTypeConfiguration<Producto>
 
         builder.Property(p => p.TipoProducto)
             .IsRequired()
-            .HasConversion<string>();
+            .HasConversion<int>();
 
         builder.Property(p => p.ActivoParaTiendaOnline)
             .IsRequired();
