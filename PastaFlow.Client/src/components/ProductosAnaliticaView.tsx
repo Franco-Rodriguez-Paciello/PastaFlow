@@ -20,19 +20,25 @@ function getMargenBadgeClasses(margenPct: number): string {
   return 'bg-green-100 text-green-700 border border-green-200';
 }
 
-export default function ProductosAnaliticaView() {
+interface Props {
+  refreshKey?: number;
+}
+
+export default function ProductosAnaliticaView({ refreshKey = 0 }: Props) {
   const [productos, setProductos] = useState<ProductProfitabilityDto[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setLoading(true);
+    setError(null);
     getProductProfitability()
       .then(setProductos)
       .catch((err: unknown) =>
         setError(err instanceof Error ? err.message : 'Error desconocido')
       )
       .finally(() => setLoading(false));
-  }, []);
+  }, [refreshKey]);
 
   if (loading) {
     return (

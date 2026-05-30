@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PastaFlow.API.Endpoints;
+using PastaFlow.API.Middleware;
 using PastaFlow.Application.Commands.Ingredientes;
 using PastaFlow.Application.Commands.Productos;
 using PastaFlow.Application.Interfaces;
@@ -11,6 +12,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 // .NET 10 built-in OpenAPI support (replaces Swashbuckle)
 builder.Services.AddOpenApi();
+
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 // Persistencia
 builder.Services.AddDbContext<PastaFlowDbContext>(options =>
@@ -34,6 +38,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+app.UseExceptionHandler();
 app.UseHttpsRedirection();
 
 app.MapIngredienteEndpoints();

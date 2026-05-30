@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import IngredientesView from './components/IngredientesView';
 import ProductosAnaliticaView from './components/ProductosAnaliticaView';
 
 function App() {
+  const [rentabilidadKey, setRentabilidadKey] = useState<number>(0);
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto">
@@ -11,8 +14,8 @@ function App() {
         </header>
 
         <main>
-          <IngredientesView />
-          <ProductosAnaliticaView />
+          <IngredientesView onCostoActualizado={() => setRentabilidadKey((k) => k + 1)} />
+          <ProductosAnaliticaView refreshKey={rentabilidadKey} />
         </main>
       </div>
     </div>
