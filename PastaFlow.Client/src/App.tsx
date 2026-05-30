@@ -1,23 +1,42 @@
 import { useState } from 'react';
 import IngredientesView from './components/IngredientesView';
 import ProductosAnaliticaView from './components/ProductosAnaliticaView';
+import  SideBar  from './components/SideBar';
 
 function App() {
-  const [rentabilidadKey, setRentabilidadKey] = useState<number>(0);
+  // Estado que maneja qué pantalla se muestra en pantalla
+  const [view, setView] = useState<string>('insumos');
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">PastaFlow - Panel de Control</h1>
-          <p className="text-gray-600">Gestión de insumos, recetas y costos de fabricación.</p>
-        </header>
+    <div className="flex min-h-screen bg-gray-50">
+      {/* Barra Lateral Fija */}
+      <SideBar currentView={view} onViewChange={setView} />
 
-        <main>
-          <IngredientesView onCostoActualizado={() => setRentabilidadKey((k) => k + 1)} />
-          <ProductosAnaliticaView refreshKey={rentabilidadKey} />
-        </main>
-      </div>
+      {/* Contenedor Principal Dinámico */}
+      <main className="flex-1 p-8">
+        {view === 'insumos' && (
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">Gestión de Insumos</h2>
+            <IngredientesView />
+          </div>
+        )}
+
+        {view === 'rentabilidad' && (
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">Panel Analítico</h2>
+            <ProductosAnaliticaView />
+          </div>
+        )}
+
+        {view === 'recetas' && (
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">Creador de Recetas Dinámico</h2>
+            <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+              <p className="text-gray-600">Próximamente: Acá tu viejo va a poder combinar ingredientes y armar nuevas pastas.</p>
+            </div>
+          </div>
+        )}
+      </main>
     </div>
   );
 }
