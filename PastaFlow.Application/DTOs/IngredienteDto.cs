@@ -5,4 +5,5 @@ public sealed record IngredienteDto(
     string Nombre,
     string UnidadMedida,
     decimal CostoActual,
+    decimal StockActual,
     DateTime UltimaActualizacionCosto);

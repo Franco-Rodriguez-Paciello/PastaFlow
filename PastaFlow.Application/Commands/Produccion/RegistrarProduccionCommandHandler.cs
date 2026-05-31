@@ -54,43 +54,45 @@ public sealed class RegistrarProduccionCommandHandler
                 throw new InvalidOperationException(
                     $"El producto '{producto.Nombre}' no tiene ningún insumo asignado en su receta.");
 
-            // 3. Descontar stock de cada insumo (modo permisivo: permite negativos)
+            // 3. Cargar todos los insumos de la receta de una sola vez
+            List<int> idsInsumos = receta.Select(r => r.IngredienteId).ToList();
+            List<Ingrediente> insumos = await _context.Ingredientes
+                .Where(i => idsInsumos.Contains(i.Id))
+                .ToListAsync(cancellationToken);
+
+            // 4. Validar stock suficiente para TODOS los insumos antes de mutar ninguno
             foreach (RecetaIngrediente item in receta)
             {
-                Ingrediente? ingrediente = await _context.Ingredientes
-                    .FirstOrDefaultAsync(i => i.Id == item.IngredienteId, cancellationToken);
+                Ingrediente? ingrediente = insumos.FirstOrDefault(i => i.Id == item.IngredienteId);
 
                 if (ingrediente is null)
-                {
-                    _logger.LogWarning(
-                        "Insumo con Id {IngredienteId} referenciado en la receta del producto {ProductoId} no existe en la base de datos.",
-                        item.IngredienteId, command.ProductoId);
-                    continue;
-                }
+                    throw new InvalidOperationException(
+                        $"El insumo con Id {item.IngredienteId} referenciado en la receta del producto '{producto.Nombre}' no existe en la base de datos.");
 
                 decimal cantidadADescontar = item.CantidadRequerida * command.CantidadProducida;
-                decimal stockAntes = ingrediente.StockActual;
 
-                ingrediente.DescontarStock(cantidadADescontar);
-
-                if (ingrediente.StockActual < 0)
-                {
-                    _logger.LogWarning(
-                        "Stock insuficiente para el insumo '{Nombre}' (Id {IngredienteId}): " +
-                        "stock antes={StockAntes}, descontado={Descontado}, stock resultante={StockResultante}.",
-                        ingrediente.Nombre, ingrediente.Id,
-                        stockAntes, cantidadADescontar, ingrediente.StockActual);
-                }
+                if (ingrediente.StockActual < cantidadADescontar)
+                    throw new InvalidOperationException(
+                        $"Stock insuficiente de '{ingrediente.Nombre}' para realizar la producción. " +
+                        $"Stock disponible: {ingrediente.StockActual}, requerido: {cantidadADescontar}.");
             }
 
-            // 4. Aumentar el stock del producto terminado
+            // 5. Descontar stock de cada insumo (validación superada, stock garantizado)
+            foreach (RecetaIngrediente item in receta)
+            {
+                Ingrediente ingrediente = insumos.First(i => i.Id == item.IngredienteId);
+                decimal cantidadADescontar = item.CantidadRequerida * command.CantidadProducida;
+                ingrediente.DescontarStock(cantidadADescontar);
+            }
+
+            // 6. Aumentar el stock del producto terminado
             producto.AumentarStock(command.CantidadProducida);
 
-            // 5. Registrar en el historial de producción
+            // 7. Registrar en el historial de producción
             var registro = new HistorialProduccion(command.ProductoId, command.CantidadProducida);
             _context.HistorialProduccion.Add(registro);
 
-            // 6. Persistir y confirmar la transacción
+            // 8. Persistir y confirmar la transacción
             await _context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 

@@ -3,6 +3,7 @@ export interface IngredienteDto {
   nombre: string;
   unidadMedida: string;
   costoActual: number;
+  stockActual: number;
   ultimaActualizacionCosto: string;
 }
 
@@ -22,10 +23,22 @@ export interface RecetaItemDto {
   cantidadRequerida: number;
 }
 
+export interface RecetaIngredienteDto {
+  ingredienteId: number;
+  nombreIngrediente: string;
+  cantidadRequerida: number;
+  unidadMedida: string;
+}
+
 export interface ProductoDto {
   id: number;
   nombre: string;
+  descripcion: string;
+  precioVenta: number;
+  stockActual: number;
   tipoProducto: string;
+  activoParaTiendaOnline: boolean;
+  receta: RecetaIngredienteDto[];
 }
 
 export interface RegistrarProductoInput {

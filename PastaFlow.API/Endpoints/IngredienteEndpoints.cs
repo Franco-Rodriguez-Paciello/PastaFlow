@@ -1,12 +1,17 @@
 using PastaFlow.Application.Commands.Ingredientes;
 using PastaFlow.Application.DTOs;
+using PastaFlow.Application.Interfaces;
 using PastaFlow.Application.Queries.Ingredientes;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace PastaFlow.API.Endpoints;
 
 /// <summary>Body del endpoint PUT /{id}/costo.</summary>
 public sealed record ActualizarCostoRequest(decimal NuevoCosto);
+
+/// <summary>Body del endpoint PATCH /{id}/stock.</summary>
+public sealed record ActualizarStockRequest(decimal NuevoStock);
 
 public static class IngredienteEndpoints
 {
@@ -74,6 +79,36 @@ public static class IngredienteEndpoints
         })
         .WithName("ActualizarCostoIngrediente")
         .WithSummary("Actualiza el costo de un ingrediente existente")
+        .Produces(StatusCodes.Status204NoContent)
+        .Produces<object>(StatusCodes.Status400BadRequest)
+        .Produces<object>(StatusCodes.Status404NotFound);
+
+        group.MapPatch("/{id:int}/stock", async (
+            int id,
+            [FromBody] ActualizarStockRequest body,
+            IPastaFlowDbContext context,
+            CancellationToken ct) =>
+        {
+            try
+            {
+                var ingrediente = await context.Ingredientes
+                    .FirstOrDefaultAsync(i => i.Id == id, ct);
+
+                if (ingrediente is null)
+                    return Results.NotFound(new { error = $"No se encontró un ingrediente con el ID '{id}'." });
+
+                ingrediente.AjustarStock(body.NuevoStock);
+
+                await context.SaveChangesAsync(ct);
+                return Results.NoContent();
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+        })
+        .WithName("ActualizarStockIngrediente")
+        .WithSummary("Actualiza el stock actual de un ingrediente de forma directa")
         .Produces(StatusCodes.Status204NoContent)
         .Produces<object>(StatusCodes.Status400BadRequest)
         .Produces<object>(StatusCodes.Status404NotFound);
