@@ -5,6 +5,7 @@ import ProductosAnaliticaView from './components/ProductosAnaliticaView';
 import SideBar from './components/SideBar';
 import RecetasCreadorView from './components/RecetasCreadorView';
 import ProduccionDiariaView from './components/ProduccionDiariaView';
+import HistorialProduccionView from './components/HistorialProduccionView';
 
 function App() {
   // Estado que maneja qué pantalla se muestra en pantalla
@@ -49,6 +50,13 @@ function App() {
           <div>
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Producción Diaria</h2>
             <ProduccionDiariaView />
+          </div>
+        )}
+
+        {view === 'historial' && (
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">Historial de Producción</h2>
+            <HistorialProduccionView />
           </div>
         )}
       </main>

@@ -66,6 +66,14 @@ export interface UltimaProduccionItemDto {
   fechaDeRegistro: string; // ISO 8601
 }
 
+export interface HistorialProduccionDto {
+  id: number;
+  productoId: number;
+  nombreProducto: string;
+  cantidadProducida: number;
+  fechaDeRegistro: string; // ISO 8601
+}
+
 export interface DashboardStatsDto {
   valorTotalInsumos: number;
   produccionHoy: number;

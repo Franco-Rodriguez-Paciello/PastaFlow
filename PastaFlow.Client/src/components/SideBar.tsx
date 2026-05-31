@@ -10,6 +10,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Rentabilidad', view: 'rentabilidad', icon: '📊' },
   { label: 'Creador de Recetas', view: 'recetas', icon: '📋' },
   { label: 'Producción Diaria', view: 'produccion', icon: '🏭' },
+  { label: 'Historial de Producción', view: 'historial', icon: '📜' },
 ];
 
 interface Props {
