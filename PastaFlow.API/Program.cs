@@ -5,6 +5,7 @@ using PastaFlow.Application.Commands.Ingredientes;
 using PastaFlow.Application.Commands.Produccion;
 using PastaFlow.Application.Commands.Productos;
 using PastaFlow.Application.Interfaces;
+using PastaFlow.Application.Queries.Dashboard;
 using PastaFlow.Application.Queries.Ingredientes;
 using PastaFlow.Application.Queries.Productos;
 using PastaFlow.Infrastructure.Persistence;
@@ -34,6 +35,7 @@ builder.Services.AddScoped<GetProductosQueryHandler>();
 builder.Services.AddScoped<GetProductProfitabilityQueryHandler>();
 builder.Services.AddScoped<GetRecetaByProductoQueryHandler>();
 builder.Services.AddScoped<RegistrarProduccionCommandHandler>();
+builder.Services.AddScoped<GetDashboardStatsQueryHandler>();
 
 var app = builder.Build();
 
@@ -48,5 +50,6 @@ app.UseHttpsRedirection();
 app.MapIngredienteEndpoints();
 app.MapProductoEndpoints();
 app.MapProduccionEndpoints();
+app.MapDashboardEndpoints();
 
 app.Run();

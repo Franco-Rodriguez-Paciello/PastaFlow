@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { IngredienteDto } from '../types/api.types';
-import { actualizarCosto, ajustarStock, getIngredientes } from '../services/ingredienteService';
+import { actualizarCosto, actualizarUmbral, ajustarStock, getIngredientes } from '../services/ingredienteService';
 
 interface Props {
   onCostoActualizado?: () => void;
@@ -88,6 +88,11 @@ export default function IngredientesView({ onCostoActualizado }: Props) {
   const [editingStockValue, setEditingStockValue] = useState<string>('');
   const [savingStockId, setSavingStockId] = useState<number | null>(null);
 
+  // Umbral editing
+  const [editingUmbralId, setEditingUmbralId] = useState<number | null>(null);
+  const [editingUmbralValue, setEditingUmbralValue] = useState<string>('');
+  const [savingUmbralId, setSavingUmbralId] = useState<number | null>(null);
+
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const successTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -122,6 +127,8 @@ export default function IngredientesView({ onCostoActualizado }: Props) {
   function handleStartEditCosto(ingrediente: IngredienteDto): void {
     setEditingStockId(null);
     setEditingStockValue('');
+    setEditingUmbralId(null);
+    setEditingUmbralValue('');
     setEditingId(ingrediente.id);
     setEditingValue(ingrediente.costoActual.toFixed(2));
   }
@@ -149,11 +156,48 @@ export default function IngredientesView({ onCostoActualizado }: Props) {
     }
   }
 
+  // ── Umbral handlers ──────────────────────────────────────────────────────
+
+  function handleStartEditUmbral(ingrediente: IngredienteDto): void {
+    setEditingId(null);
+    setEditingValue('');
+    setEditingStockId(null);
+    setEditingStockValue('');
+    setEditingUmbralId(ingrediente.id);
+    setEditingUmbralValue(String(ingrediente.umbralCritico));
+  }
+
+  function handleCancelEditUmbral(): void {
+    setEditingUmbralId(null);
+    setEditingUmbralValue('');
+  }
+
+  async function handleSaveUmbral(id: number): Promise<void> {
+    const nuevoUmbral = parseFloat(editingUmbralValue);
+    if (isNaN(nuevoUmbral) || nuevoUmbral < 0) return;
+    setSavingUmbralId(id);
+    try {
+      await actualizarUmbral(id, nuevoUmbral);
+      setEditingUmbralId(null);
+      setEditingUmbralValue('');
+      setIngredientes(prev =>
+        prev.map(i => i.id === id ? { ...i, umbralCritico: nuevoUmbral } : i)
+      );
+      showSuccess('Alerta mínima actualizada correctamente.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al actualizar el umbral.');
+    } finally {
+      setSavingUmbralId(null);
+    }
+  }
+
   // ── Stock handlers ───────────────────────────────────────────────────────
 
   function handleStartEditStock(ingrediente: IngredienteDto): void {
     setEditingId(null);
     setEditingValue('');
+    setEditingUmbralId(null);
+    setEditingUmbralValue('');
     setEditingStockId(ingrediente.id);
     setEditingStockValue(String(ingrediente.stockActual));
   }
@@ -226,6 +270,10 @@ export default function IngredientesView({ onCostoActualizado }: Props) {
                 <span className="ml-1 normal-case text-gray-400 font-normal">(clic para editar)</span>
               </th>
               <th className="px-5 py-3 text-left font-medium">Última Actualización</th>
+              <th className="px-5 py-3 text-left font-medium">
+                Alerta Mínima
+                <span className="ml-1 normal-case text-gray-400 font-normal">(clic para editar)</span>
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-100">
@@ -234,6 +282,8 @@ export default function IngredientesView({ onCostoActualizado }: Props) {
               const isSavingCosto = savingId === ingrediente.id;
               const isEditingStock = editingStockId === ingrediente.id;
               const isSavingStock = savingStockId === ingrediente.id;
+              const isEditingUmbral = editingUmbralId === ingrediente.id;
+              const isSavingUmbral = savingUmbralId === ingrediente.id;
 
               const stockFormatted =
                 ingrediente.stockActual % 1 === 0
@@ -340,12 +390,60 @@ export default function IngredientesView({ onCostoActualizado }: Props) {
                   <td className="px-5 py-3 text-gray-500">
                     {new Date(ingrediente.ultimaActualizacionCosto).toLocaleDateString('es-AR')}
                   </td>
+
+                  {/* Umbral crítico — click-to-edit */}
+                  <td
+                    className={`px-5 py-3 text-gray-800 ${!isEditingUmbral ? 'cursor-pointer group/umbral' : ''}`}
+                    onClick={() => { if (!isEditingUmbral) handleStartEditUmbral(ingrediente); }}
+                    title={!isEditingUmbral ? 'Clic para editar alerta mínima' : undefined}
+                  >
+                    {isEditingUmbral ? (
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={editingUmbralValue}
+                          onChange={(e) => setEditingUmbralValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') void handleSaveUmbral(ingrediente.id);
+                            if (e.key === 'Escape') handleCancelEditUmbral();
+                          }}
+                          className="w-20 px-1.5 py-0.5 text-sm border border-gray-300 rounded focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-200"
+                          autoFocus
+                          disabled={isSavingUmbral}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <SaveCancelButtons
+                          onSave={() => void handleSaveUmbral(ingrediente.id)}
+                          onCancel={handleCancelEditUmbral}
+                          isSaving={isSavingUmbral}
+                          accentClass="text-amber-600 hover:text-amber-700"
+                        />
+                      </div>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className={`tabular-nums ${
+                          ingrediente.stockActual <= ingrediente.umbralCritico
+                            ? 'text-amber-600 font-semibold'
+                            : ''
+                        }`}>
+                          {ingrediente.umbralCritico % 1 === 0
+                            ? ingrediente.umbralCritico.toFixed(0)
+                            : ingrediente.umbralCritico.toFixed(2)}
+                        </span>
+                        <span className="text-gray-300 opacity-0 group-hover/umbral:opacity-100 transition-opacity">
+                          <IconPencil />
+                        </span>
+                      </span>
+                    )}
+                  </td>
                 </tr>
               );
             })}
             {ingredientes.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-5 py-6 text-center text-gray-400">
+                <td colSpan={6} className="px-5 py-6 text-center text-gray-400">
                   No hay insumos registrados.
                 </td>
               </tr>

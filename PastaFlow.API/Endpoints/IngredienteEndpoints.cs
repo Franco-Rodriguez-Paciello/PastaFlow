@@ -13,6 +13,9 @@ public sealed record ActualizarCostoRequest(decimal NuevoCosto);
 /// <summary>Body del endpoint PATCH /{id}/stock.</summary>
 public sealed record ActualizarStockRequest(decimal NuevoStock);
 
+/// <summary>Body del endpoint PATCH /{id}/umbral.</summary>
+public sealed record ActualizarUmbralRequest(decimal NuevoUmbral);
+
 public static class IngredienteEndpoints
 {
     public static IEndpointRouteBuilder MapIngredienteEndpoints(this IEndpointRouteBuilder app)
@@ -109,6 +112,36 @@ public static class IngredienteEndpoints
         })
         .WithName("ActualizarStockIngrediente")
         .WithSummary("Actualiza el stock actual de un ingrediente de forma directa")
+        .Produces(StatusCodes.Status204NoContent)
+        .Produces<object>(StatusCodes.Status400BadRequest)
+        .Produces<object>(StatusCodes.Status404NotFound);
+
+        group.MapPatch("/{id:int}/umbral", async (
+            int id,
+            [FromBody] ActualizarUmbralRequest body,
+            IPastaFlowDbContext context,
+            CancellationToken ct) =>
+        {
+            try
+            {
+                var ingrediente = await context.Ingredientes
+                    .FirstOrDefaultAsync(i => i.Id == id, ct);
+
+                if (ingrediente is null)
+                    return Results.NotFound(new { error = $"No se encontró un ingrediente con el ID '{id}'." });
+
+                ingrediente.SetUmbralCritico(body.NuevoUmbral);
+
+                await context.SaveChangesAsync(ct);
+                return Results.NoContent();
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+        })
+        .WithName("ActualizarUmbralIngrediente")
+        .WithSummary("Actualiza el umbral crítico de stock de un ingrediente")
         .Produces(StatusCodes.Status204NoContent)
         .Produces<object>(StatusCodes.Status400BadRequest)
         .Produces<object>(StatusCodes.Status404NotFound);

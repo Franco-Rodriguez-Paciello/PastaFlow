@@ -7,6 +7,7 @@ public class Ingrediente
     public UnidadMedida UnidadMedida { get; private set; }
     public decimal CostoActual { get; private set; }
     public decimal StockActual { get; private set; }
+    public decimal UmbralCritico { get; private set; }
     public DateTime UltimaActualizacionCosto { get; private set; }
 
     private Ingrediente() { }
@@ -20,7 +21,14 @@ public class Ingrediente
         UnidadMedida = unidadMedida;
         CostoActual = costoActual;
         StockActual = 0;
+        UmbralCritico = 5m;
         UltimaActualizacionCosto = DateTime.UtcNow;
+    }
+
+    public void SetUmbralCritico(decimal umbral)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(umbral);
+        UmbralCritico = umbral;
     }
 
     public void ActualizarCosto(decimal nuevoCosto)

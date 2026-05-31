@@ -5,6 +5,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
+  { label: 'Dashboard', view: 'dashboard', icon: '🏠' },
   { label: 'Insumos', view: 'insumos', icon: '🧂' },
   { label: 'Rentabilidad', view: 'rentabilidad', icon: '📊' },
   { label: 'Creador de Recetas', view: 'recetas', icon: '📋' },

@@ -27,6 +27,11 @@ public class IngredienteConfiguration : IEntityTypeConfiguration<Ingrediente>
             .HasPrecision(18, 4)
             .HasDefaultValue(0m);
 
+        builder.Property(i => i.UmbralCritico)
+            .IsRequired()
+            .HasPrecision(18, 4)
+            .HasDefaultValue(5m);
+
         builder.Property(i => i.UltimaActualizacionCosto)
             .IsRequired();
     }

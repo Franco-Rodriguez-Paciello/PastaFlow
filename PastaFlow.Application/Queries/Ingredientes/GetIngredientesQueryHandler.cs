@@ -30,6 +30,7 @@ public sealed class GetIngredientesQueryHandler
                 i.UnidadMedida.ToString(),
                 i.CostoActual,
                 i.StockActual,
+                i.UmbralCritico,
                 i.UltimaActualizacionCosto))
             .ToListAsync(cancellationToken);
     }

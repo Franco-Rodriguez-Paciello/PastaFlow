@@ -33,3 +33,16 @@ export async function ajustarStock(id: number, nuevoStock: number): Promise<void
     throw new Error(`Error al ajustar stock: ${response.status} ${response.statusText}`);
   }
 }
+
+export async function actualizarUmbral(id: number, nuevoUmbral: number): Promise<void> {
+  const response = await fetch(`/api/ingredientes/${id}/umbral`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ nuevoUmbral }),
+  });
+  if (!response.ok) {
+    throw new Error(`Error al actualizar umbral: ${response.status} ${response.statusText}`);
+  }
+}

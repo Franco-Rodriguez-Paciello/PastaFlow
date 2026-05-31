@@ -4,6 +4,7 @@ export interface IngredienteDto {
   unidadMedida: string;
   costoActual: number;
   stockActual: number;
+  umbralCritico: number;
   ultimaActualizacionCosto: string;
 }
 
@@ -49,4 +50,26 @@ export interface RegistrarProductoInput {
   activoParaTiendaOnline: boolean;
   /** 0 = Simple | 1 = Compuesto */
   tipoProducto: number;
+}
+
+// ─── Dashboard ────────────────────────────────────────────────────────────────
+
+export interface StockCriticoItemDto {
+  nombre: string;
+  stockActual: number;
+  unidadMedida: string;
+}
+
+export interface UltimaProduccionItemDto {
+  nombreProducto: string;
+  cantidadProducida: number;
+  fechaDeRegistro: string; // ISO 8601
+}
+
+export interface DashboardStatsDto {
+  valorTotalInsumos: number;
+  produccionHoy: number;
+  insumosCriticosCount: number;
+  listaStockCritico: StockCriticoItemDto[];
+  ultimasProducciones: UltimaProduccionItemDto[];
 }
