@@ -146,6 +146,50 @@ public static class IngredienteEndpoints
         .Produces<object>(StatusCodes.Status400BadRequest)
         .Produces<object>(StatusCodes.Status404NotFound);
 
+        group.MapGet("/ajustes", async (
+            [FromQuery] int? insumoId,
+            [FromQuery] int take,
+            GetHistorialAjustesQueryHandler handler,
+            CancellationToken ct) =>
+        {
+            var query = new GetHistorialAjustesQuery(insumoId, take > 0 ? take : 100);
+            var ajustes = await handler.HandleAsync(query, ct);
+            return Results.Ok(ajustes);
+        })
+        .WithName("GetHistorialAjustes")
+        .WithSummary("Retorna el historial de ajustes manuales de stock")
+        .Produces<IReadOnlyCollection<AjusteStockDto>>(StatusCodes.Status200OK);
+
+        group.MapPost("/ajuste", async (
+            [FromBody] RegistrarAjusteManualCommand command,
+            RegistrarAjusteManualCommandHandler handler,
+            CancellationToken ct) =>
+        {
+            try
+            {
+                int ajusteId = await handler.HandleAsync(command, ct);
+                return Results.Created($"/api/ingredientes/ajuste/{ajusteId}", new { id = ajusteId });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return Results.NotFound(new { error = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.UnprocessableEntity(new { error = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+        })
+        .WithName("RegistrarAjusteManual")
+        .WithSummary("Registra un ajuste manual de stock (merma, rotura, conteo físico, compra manual)")
+        .Produces<object>(StatusCodes.Status201Created)
+        .Produces<object>(StatusCodes.Status400BadRequest)
+        .Produces<object>(StatusCodes.Status404NotFound)
+        .Produces<object>(StatusCodes.Status422UnprocessableEntity);
+
         return app;
     }
 }

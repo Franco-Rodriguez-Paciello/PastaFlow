@@ -44,6 +44,21 @@ public class Ingrediente
         StockActual = stock;
     }
 
+    public void SumarStock(decimal cantidad)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(cantidad);
+        StockActual += cantidad;
+    }
+
+    public void RestarStock(decimal cantidad)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(cantidad);
+        if (StockActual - cantidad < 0)
+            throw new InvalidOperationException(
+                $"Stock insuficiente. Stock actual: {StockActual}, cantidad a restar: {cantidad}.");
+        StockActual -= cantidad;
+    }
+
     /// <summary>
     /// Descuenta la cantidad indicada del stock. Permite stock negativo (modo permisivo).
     /// </summary>

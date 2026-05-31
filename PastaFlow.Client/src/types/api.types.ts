@@ -1,3 +1,14 @@
+export interface AjusteStockDto {
+  id: number;
+  fechaRegistro: string;
+  insumoId: number;
+  nombreInsumo: string;
+  tipoAjuste: 'Suma' | 'Resta';
+  motivo: 'Merma' | 'Rotura' | 'ConteoFisico' | 'CompraManual';
+  cantidad: number;
+  observaciones: string | null;
+}
+
 export interface IngredienteDto {
   id: number;
   nombre: string;

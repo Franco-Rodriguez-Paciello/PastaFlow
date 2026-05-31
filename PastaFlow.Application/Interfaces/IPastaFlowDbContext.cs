@@ -11,6 +11,7 @@ public interface IPastaFlowDbContext
     DbSet<RecetaIngrediente> RecetaIngredientes { get; }
     DbSet<HistorialPrecioIngrediente> HistorialPreciosIngrediente { get; }
     DbSet<HistorialProduccion> HistorialProduccion { get; }
+    DbSet<AjusteStock> AjustesStock { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);

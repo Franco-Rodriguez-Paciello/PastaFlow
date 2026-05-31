@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using PastaFlow.API.Endpoints;
 using PastaFlow.API.Middleware;
@@ -16,6 +17,10 @@ var builder = WebApplication.CreateBuilder(args);
 // .NET 10 built-in OpenAPI support (replaces Swashbuckle)
 builder.Services.AddOpenApi();
 
+// Serializar enums como strings en toda la API
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
@@ -28,7 +33,9 @@ builder.Services.AddScoped<IPastaFlowDbContext, PastaFlowDbContext>();
 // Handlers CQRS
 builder.Services.AddScoped<RegistrarIngredienteCommandHandler>();
 builder.Services.AddScoped<ActualizarCostoIngredienteCommandHandler>();
+builder.Services.AddScoped<RegistrarAjusteManualCommandHandler>();
 builder.Services.AddScoped<GetIngredientesQueryHandler>();
+builder.Services.AddScoped<GetHistorialAjustesQueryHandler>();
 builder.Services.AddScoped<RegistrarProductoCommandHandler>();
 builder.Services.AddScoped<AsignarRecetaCommandHandler>();
 builder.Services.AddScoped<GuardarRecetaCommandHandler>();
