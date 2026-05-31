@@ -22,6 +22,11 @@ public class IngredienteConfiguration : IEntityTypeConfiguration<Ingrediente>
             .IsRequired()
             .HasPrecision(18, 4);
 
+        builder.Property(i => i.StockActual)
+            .IsRequired()
+            .HasPrecision(18, 4)
+            .HasDefaultValue(0m);
+
         builder.Property(i => i.UltimaActualizacionCosto)
             .IsRequired();
     }

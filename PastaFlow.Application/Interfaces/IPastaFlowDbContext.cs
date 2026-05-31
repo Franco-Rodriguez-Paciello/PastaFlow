@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using PastaFlow.Domain.Entities;
 
 namespace PastaFlow.Application.Interfaces;
@@ -9,6 +10,8 @@ public interface IPastaFlowDbContext
     DbSet<Ingrediente> Ingredientes { get; }
     DbSet<RecetaIngrediente> RecetaIngredientes { get; }
     DbSet<HistorialPrecioIngrediente> HistorialPreciosIngrediente { get; }
+    DbSet<HistorialProduccion> HistorialProduccion { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+    Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
 }

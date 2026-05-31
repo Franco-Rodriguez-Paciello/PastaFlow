@@ -32,6 +32,12 @@ public sealed class RegistrarProductoCommandHandler
             command.PrecioVenta,
             command.TipoProducto);
 
+        if (command.StockInicial > 0)
+            producto.AjustarStock(command.StockInicial);
+
+        if (command.ActivoParaTiendaOnline)
+            producto.ActualizarActivoParaTiendaOnline(true);
+
         _context.Productos.Add(producto);
 
         // 3. Único SaveChanges: INSERT en la misma transacción implícita

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using PastaFlow.API.Endpoints;
 using PastaFlow.API.Middleware;
 using PastaFlow.Application.Commands.Ingredientes;
+using PastaFlow.Application.Commands.Produccion;
 using PastaFlow.Application.Commands.Productos;
 using PastaFlow.Application.Interfaces;
 using PastaFlow.Application.Queries.Ingredientes;
@@ -28,8 +29,11 @@ builder.Services.AddScoped<ActualizarCostoIngredienteCommandHandler>();
 builder.Services.AddScoped<GetIngredientesQueryHandler>();
 builder.Services.AddScoped<RegistrarProductoCommandHandler>();
 builder.Services.AddScoped<AsignarRecetaCommandHandler>();
+builder.Services.AddScoped<GuardarRecetaCommandHandler>();
 builder.Services.AddScoped<GetProductosQueryHandler>();
 builder.Services.AddScoped<GetProductProfitabilityQueryHandler>();
+builder.Services.AddScoped<GetRecetaByProductoQueryHandler>();
+builder.Services.AddScoped<RegistrarProduccionCommandHandler>();
 
 var app = builder.Build();
 
@@ -43,5 +47,6 @@ app.UseHttpsRedirection();
 
 app.MapIngredienteEndpoints();
 app.MapProductoEndpoints();
+app.MapProduccionEndpoints();
 
 app.Run();

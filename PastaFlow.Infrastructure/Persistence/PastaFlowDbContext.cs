@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using PastaFlow.Application.Interfaces;
 using PastaFlow.Domain.Entities;
 
@@ -12,6 +13,10 @@ public class PastaFlowDbContext : DbContext, IPastaFlowDbContext
     public DbSet<Ingrediente> Ingredientes => Set<Ingrediente>();
     public DbSet<RecetaIngrediente> RecetaIngredientes => Set<RecetaIngrediente>();
     public DbSet<HistorialPrecioIngrediente> HistorialPreciosIngrediente => Set<HistorialPrecioIngrediente>();
+    public DbSet<HistorialProduccion> HistorialProduccion => Set<HistorialProduccion>();
+
+    public Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
+        => Database.BeginTransactionAsync(cancellationToken);
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

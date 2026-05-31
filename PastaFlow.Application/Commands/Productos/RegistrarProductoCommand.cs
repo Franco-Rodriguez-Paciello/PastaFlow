@@ -6,4 +6,6 @@ public sealed record RegistrarProductoCommand(
     string Nombre,
     string Descripcion,
     decimal PrecioVenta,
-    TipoProducto TipoProducto);
+    TipoProducto TipoProducto,
+    decimal StockInicial = 0,
+    bool ActivoParaTiendaOnline = false);

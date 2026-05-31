@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import IngredientesView from './components/IngredientesView';
 import ProductosAnaliticaView from './components/ProductosAnaliticaView';
-import  SideBar  from './components/SideBar';
+import SideBar from './components/SideBar';
+import RecetasCreadorView from './components/RecetasCreadorView';
 
 function App() {
   // Estado que maneja qué pantalla se muestra en pantalla
@@ -13,7 +14,7 @@ function App() {
       <SideBar currentView={view} onViewChange={setView} />
 
       {/* Contenedor Principal Dinámico */}
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-8 overflow-y-auto">
         {view === 'insumos' && (
           <div>
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Gestión de Insumos</h2>
@@ -31,9 +32,7 @@ function App() {
         {view === 'recetas' && (
           <div>
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Creador de Recetas Dinámico</h2>
-            <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
-              <p className="text-gray-600">Próximamente: Acá tu viejo va a poder combinar ingredientes y armar nuevas pastas.</p>
-            </div>
+            <RecetasCreadorView />
           </div>
         )}
       </main>

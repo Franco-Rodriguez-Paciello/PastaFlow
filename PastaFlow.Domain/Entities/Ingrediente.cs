@@ -6,6 +6,7 @@ public class Ingrediente
     public string Nombre { get; private set; } = null!;
     public UnidadMedida UnidadMedida { get; private set; }
     public decimal CostoActual { get; private set; }
+    public decimal StockActual { get; private set; }
     public DateTime UltimaActualizacionCosto { get; private set; }
 
     private Ingrediente() { }
@@ -18,6 +19,7 @@ public class Ingrediente
         Nombre = nombre;
         UnidadMedida = unidadMedida;
         CostoActual = costoActual;
+        StockActual = 0;
         UltimaActualizacionCosto = DateTime.UtcNow;
     }
 
@@ -26,5 +28,20 @@ public class Ingrediente
         ArgumentOutOfRangeException.ThrowIfNegative(nuevoCosto);
         CostoActual = nuevoCosto;
         UltimaActualizacionCosto = DateTime.UtcNow;
+    }
+
+    public void AjustarStock(decimal stock)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(stock);
+        StockActual = stock;
+    }
+
+    /// <summary>
+    /// Descuenta la cantidad indicada del stock. Permite stock negativo (modo permisivo).
+    /// </summary>
+    public void DescontarStock(decimal cantidad)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(cantidad);
+        StockActual -= cantidad;
     }
 }

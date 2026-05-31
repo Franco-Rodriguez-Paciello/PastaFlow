@@ -79,6 +79,19 @@ public static class ProductoEndpoints
         .Produces<object>(StatusCodes.Status400BadRequest)
         .Produces<object>(StatusCodes.Status404NotFound);
 
+        group.MapGet("/{productId:int}/receta", async (
+            int productId,
+            GetRecetaByProductoQueryHandler handler,
+            CancellationToken ct) =>
+        {
+            IReadOnlyCollection<RecetaItemDto> receta =
+                await handler.HandleAsync(new GetRecetaByProductoQuery(productId), ct);
+            return Results.Ok(receta);
+        })
+        .WithName("GetRecetaByProducto")
+        .WithSummary("Retorna los ingredientes y cantidades de la receta de un producto")
+        .Produces<IReadOnlyCollection<RecetaItemDto>>(StatusCodes.Status200OK);
+
         group.MapGet("/rentabilidad", async (
             GetProductProfitabilityQueryHandler handler,
             CancellationToken ct) =>
@@ -90,6 +103,20 @@ public static class ProductoEndpoints
         .WithName("GetProductProfitability")
         .WithSummary("Retorna el costo total, precio de venta y margen de cada producto compuesto")
         .Produces<IReadOnlyCollection<ProductProfitabilityDto>>(StatusCodes.Status200OK);
+
+        group.MapPost("/guardar-receta", async (
+            [FromBody] GuardarRecetaCommand command,
+            GuardarRecetaCommandHandler handler,
+            CancellationToken ct) =>
+        {
+            int productoId = await handler.HandleAsync(command, ct);
+            return Results.Created($"/api/productos/{productoId}/receta", new { productoId });
+        })
+        .WithName("GuardarReceta")
+        .WithSummary("Crea un producto nuevo o actualiza uno existente junto con su receta en una única transacción")
+        .Produces<object>(StatusCodes.Status201Created)
+        .Produces<object>(StatusCodes.Status400BadRequest)
+        .Produces<object>(StatusCodes.Status404NotFound);
 
         return app;
     }

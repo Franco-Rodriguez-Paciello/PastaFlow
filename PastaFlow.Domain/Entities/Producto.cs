@@ -26,4 +26,26 @@ public class Producto
         StockActual = 0;
         ActivoParaTiendaOnline = false;
     }
+
+    public void ConvertirACompuesto()
+    {
+        TipoProducto = TipoProducto.Compuesto;
+    }
+
+    public void ActualizarActivoParaTiendaOnline(bool activo)
+    {
+        ActivoParaTiendaOnline = activo;
+    }
+
+    public void AjustarStock(decimal stock)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(stock);
+        StockActual = stock;
+    }
+
+    public void AumentarStock(decimal cantidad)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(cantidad);
+        StockActual += cantidad;
+    }
 }

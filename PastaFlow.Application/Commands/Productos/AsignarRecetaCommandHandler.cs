@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using PastaFlow.Application.Interfaces;
 using PastaFlow.Domain.Entities;
 
@@ -17,38 +18,44 @@ public sealed class AsignarRecetaCommandHandler
         AsignarRecetaCommand command,
         CancellationToken cancellationToken = default)
     {
-        // 1. Cargar el producto con su receta actual (necesaria para la limpieza)
-        Producto? producto = await _context.Productos
-            .Include(p => p.Receta)
-            .FirstOrDefaultAsync(p => p.Id == command.ProductoId, cancellationToken);
+        await using IDbContextTransaction tx =
+            await _context.BeginTransactionAsync(cancellationToken);
 
-        if (producto is null)
-            throw new KeyNotFoundException(
-                $"No se encontró un producto con el ID '{command.ProductoId}'.");
-
-        // 2. Regla de negocio: los productos simples no tienen receta
-        if (producto.TipoProducto == TipoProducto.Simple)
-            throw new InvalidOperationException(
-                "No se puede asignar una receta a un producto simple.");
-
-        // 3. Sobreescribir la receta: eliminar los ingredientes previos del contexto
-        //    (Receta es IReadOnlyCollection, la mutación se hace a través del DbSet)
-        _context.RecetaIngredientes.RemoveRange(producto.Receta);
-
-        // 4. Instanciar y agregar cada línea de receta nueva
-        //    El constructor de RecetaIngrediente valida que productoId, ingredienteId
-        //    y cantidadRequerida sean mayores que cero.
-        foreach (IngredienteRecetaInput input in command.Ingredientes)
+        try
         {
-            var recetaIngrediente = new RecetaIngrediente(
-                command.ProductoId,
-                input.IngredienteId,
-                input.CantidadRequerida);
+            // 1. Cargar el producto con su receta actual
+            Producto? producto = await _context.Productos
+                .Include(p => p.Receta)
+                .FirstOrDefaultAsync(p => p.Id == command.ProductoId, cancellationToken);
 
-            _context.RecetaIngredientes.Add(recetaIngrediente);
+            if (producto is null)
+                throw new KeyNotFoundException(
+                    $"No se encontró un producto con el ID '{command.ProductoId}'.");
+
+            // 2. Eliminar ingredientes previos de la receta
+            _context.RecetaIngredientes.RemoveRange(producto.Receta);
+
+            // 3. Insertar los nuevos ingredientes
+            foreach (IngredienteRecetaInput input in command.Ingredientes)
+            {
+                _context.RecetaIngredientes.Add(new RecetaIngrediente(
+                    command.ProductoId,
+                    input.IngredienteId,
+                    input.CantidadRequerida));
+            }
+
+            // 4. Si era Simple, promoverlo automáticamente a Compuesto
+            if (producto.TipoProducto == TipoProducto.Simple)
+                producto.ConvertirACompuesto();
+
+            // 5. Persistir todo en una única operación y confirmar la transacción
+            await _context.SaveChangesAsync(cancellationToken);
+            await tx.CommitAsync(cancellationToken);
         }
-
-        // 5. Única operación de escritura: DELETEs + INSERTs en la misma transacción implícita
-        await _context.SaveChangesAsync(cancellationToken);
+        catch
+        {
+            await tx.RollbackAsync(cancellationToken);
+            throw;
+        }
     }
 }
