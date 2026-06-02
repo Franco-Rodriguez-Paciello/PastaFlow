@@ -12,6 +12,7 @@ public interface IPastaFlowDbContext
     DbSet<HistorialPrecioIngrediente> HistorialPreciosIngrediente { get; }
     DbSet<HistorialProduccion> HistorialProduccion { get; }
     DbSet<AjusteStock> AjustesStock { get; }
+    DbSet<Usuario> Usuarios { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);

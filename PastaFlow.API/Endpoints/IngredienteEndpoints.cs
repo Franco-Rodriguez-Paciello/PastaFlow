@@ -20,7 +20,7 @@ public static class IngredienteEndpoints
 {
     public static IEndpointRouteBuilder MapIngredienteEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/ingredientes");
+        var group = app.MapGroup("/api/ingredientes").RequireAuthorization();
 
         group.MapGet("/", async (
             GetIngredientesQueryHandler handler,

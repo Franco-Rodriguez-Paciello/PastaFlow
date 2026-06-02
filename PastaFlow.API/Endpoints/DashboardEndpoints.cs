@@ -8,7 +8,7 @@ public static class DashboardEndpoints
 {
     public static IEndpointRouteBuilder MapDashboardEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/dashboard");
+        var group = app.MapGroup("/api/dashboard").RequireAuthorization();
 
         group.MapGet("/stats", async (
             GetDashboardStatsQueryHandler handler,

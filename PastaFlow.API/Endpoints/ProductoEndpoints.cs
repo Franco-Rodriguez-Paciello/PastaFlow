@@ -9,7 +9,7 @@ public static class ProductoEndpoints
 {
     public static IEndpointRouteBuilder MapProductoEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/productos");
+        var group = app.MapGroup("/api/productos").RequireAuthorization();
 
         group.MapGet("/", async (
             GetProductosQueryHandler handler,

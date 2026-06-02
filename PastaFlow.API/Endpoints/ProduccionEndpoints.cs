@@ -10,7 +10,7 @@ public static class ProduccionEndpoints
 {
     public static IEndpointRouteBuilder MapProduccionEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/produccion");
+        var group = app.MapGroup("/api/produccion").RequireAuthorization();
 
         group.MapGet("/historial", async (
             [FromQuery] DateTime? fechaDesde,

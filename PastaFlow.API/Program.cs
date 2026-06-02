@@ -1,6 +1,7 @@
 using FluentValidation;
-using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using PastaFlow.API.Endpoints;
 using PastaFlow.API.Middleware;
 using PastaFlow.Application.Commands.Ingredientes;
@@ -12,6 +13,8 @@ using PastaFlow.Application.Queries.Ingredientes;
 using PastaFlow.Application.Queries.Produccion;
 using PastaFlow.Application.Queries.Productos;
 using PastaFlow.Infrastructure.Persistence;
+using System.Text;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +27,29 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 
 builder.Services.AddExceptionHandler<CustomExceptionHandler>();
 builder.Services.AddProblemDetails();
+
+// JWT Authentication
+var jwtSection = builder.Configuration.GetSection("Jwt");
+var secretKey = jwtSection["SecretKey"]
+    ?? throw new InvalidOperationException("JWT SecretKey no está configurado en appsettings.");
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtSection["Issuer"],
+            ValidAudience = jwtSection["Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+            ClockSkew = TimeSpan.Zero
+        };
+    });
+
+builder.Services.AddAuthorization();
 
 // Registra automáticamente todos los validadores del ensamblado Application
 builder.Services.AddValidatorsFromAssemblyContaining<RegistrarProduccionCommandValidator>();
@@ -60,6 +86,10 @@ if (app.Environment.IsDevelopment())
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapAuthEndpoints();
 app.MapIngredienteEndpoints();
 app.MapProductoEndpoints();
 app.MapProduccionEndpoints();
