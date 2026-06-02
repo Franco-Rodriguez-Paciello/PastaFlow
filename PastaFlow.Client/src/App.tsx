@@ -1,15 +1,21 @@
 import { useState } from 'react';
 import DashboardView from './components/DashboardView';
 import IngredientesView from './components/IngredientesView';
+import LoginView from './components/LoginView';
 import ProductosAnaliticaView from './components/ProductosAnaliticaView';
 import SideBar from './components/SideBar';
 import RecetasCreadorView from './components/RecetasCreadorView';
 import ProduccionDiariaView from './components/ProduccionDiariaView';
 import HistorialProduccionView from './components/HistorialProduccionView';
+import { useAuth } from './context/AuthContext';
 
 function App() {
+  const { isAuthenticated } = useAuth();
   // Estado que maneja qué pantalla se muestra en pantalla
   const [view, setView] = useState<string>('dashboard');
+
+  // Route guard: show Login if not authenticated
+  if (!isAuthenticated) return <LoginView />;
 
   return (
     <div className="flex min-h-screen bg-gray-50">

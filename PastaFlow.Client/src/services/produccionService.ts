@@ -1,5 +1,6 @@
 import type { HistorialProduccionDto } from '../types/api.types';
 import { throwIfError } from '../lib/apiError';
+import { apiFetch } from '../lib/apiFetch';
 
 export interface RegistrarProduccionInput {
   productoId: number;
@@ -7,7 +8,7 @@ export interface RegistrarProduccionInput {
 }
 
 export async function registrarProduccion(input: RegistrarProduccionInput): Promise<number> {
-  const response = await fetch('/api/produccion', {
+  const response = await apiFetch('/api/produccion', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
@@ -32,7 +33,7 @@ export async function getHistorialProduccion(
   if (filtros.productoId !== undefined) params.set('productoId', String(filtros.productoId));
 
   const url = `/api/produccion/historial${params.size > 0 ? `?${params.toString()}` : ''}`;
-  const response = await fetch(url);
+  const response = await apiFetch(url);
   if (!response.ok) {
     throw new Error(`Error al obtener historial: ${response.status} ${response.statusText}`);
   }
