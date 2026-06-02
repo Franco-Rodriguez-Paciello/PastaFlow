@@ -44,6 +44,7 @@ public static class IngredienteEndpoints
         })
         .WithName("RegistrarIngrediente")
         .WithSummary("Registra un nuevo ingrediente")
+        .RequireAuthorization("AdminOnly")
         .Produces<object>(StatusCodes.Status201Created)
         .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
         .Produces<ProblemDetails>(StatusCodes.Status409Conflict);
@@ -60,6 +61,7 @@ public static class IngredienteEndpoints
         })
         .WithName("ActualizarCostoIngrediente")
         .WithSummary("Actualiza el costo de un ingrediente existente")
+        .RequireAuthorization("AdminOnly")
         .Produces(StatusCodes.Status204NoContent)
         .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
         .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
@@ -83,6 +85,7 @@ public static class IngredienteEndpoints
         })
         .WithName("ActualizarStockIngrediente")
         .WithSummary("Actualiza el stock actual de un ingrediente de forma directa")
+        .RequireAuthorization("AdminOnly")
         .Produces(StatusCodes.Status204NoContent)
         .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
         .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
@@ -106,6 +109,7 @@ public static class IngredienteEndpoints
         })
         .WithName("ActualizarUmbralIngrediente")
         .WithSummary("Actualiza el umbral crítico de stock de un ingrediente")
+        .RequireAuthorization("AdminOnly")
         .Produces(StatusCodes.Status204NoContent)
         .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
         .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
@@ -122,6 +126,7 @@ public static class IngredienteEndpoints
         })
         .WithName("GetHistorialAjustes")
         .WithSummary("Retorna el historial de ajustes manuales de stock")
+        .RequireAuthorization("AdminOnly")
         .Produces<IReadOnlyCollection<AjusteStockDto>>(StatusCodes.Status200OK);
 
         group.MapPost("/ajuste", async (
@@ -134,6 +139,7 @@ public static class IngredienteEndpoints
         })
         .WithName("RegistrarAjusteManual")
         .WithSummary("Registra un ajuste manual de stock (merma, rotura, conteo físico, compra manual)")
+        .RequireAuthorization("AdminOnly")
         .Produces<object>(StatusCodes.Status201Created)
         .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
         .Produces<ProblemDetails>(StatusCodes.Status404NotFound)

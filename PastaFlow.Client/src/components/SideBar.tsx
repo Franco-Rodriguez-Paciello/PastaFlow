@@ -4,15 +4,16 @@ interface NavItem {
   label: string;
   view: string;
   icon: string;
+  adminOnly?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard', view: 'dashboard', icon: '🏠' },
-  { label: 'Insumos', view: 'insumos', icon: '🧂' },
-  { label: 'Rentabilidad', view: 'rentabilidad', icon: '📊' },
-  { label: 'Creador de Recetas', view: 'recetas', icon: '📋' },
-  { label: 'Producción Diaria', view: 'produccion', icon: '🏭' },
-  { label: 'Historial de Producción', view: 'historial', icon: '📜' },
+  { label: 'Dashboard',             view: 'dashboard',   icon: '🏠', adminOnly: true  },
+  { label: 'Insumos',               view: 'insumos',     icon: '🧂', adminOnly: true  },
+  { label: 'Rentabilidad',          view: 'rentabilidad',icon: '📊', adminOnly: true  },
+  { label: 'Creador de Recetas',    view: 'recetas',     icon: '📋', adminOnly: true  },
+  { label: 'Producción Diaria',     view: 'produccion',  icon: '🏭'                   },
+  { label: 'Historial de Producción', view: 'historial', icon: '📜', adminOnly: true  },
 ];
 
 interface Props {
@@ -22,6 +23,9 @@ interface Props {
 
 export default function SideBar({ currentView, onViewChange }: Props) {
   const { user, logout } = useAuth();
+  const isAdmin = user?.rol === 'Admin';
+  const visibleItems = NAV_ITEMS.filter(item => !item.adminOnly || isAdmin);
+
   return (
     <aside className="min-h-screen w-64 bg-gray-900 text-white p-4 flex flex-col shrink-0">
       <div className="mb-8 px-2">
@@ -30,7 +34,7 @@ export default function SideBar({ currentView, onViewChange }: Props) {
       </div>
 
       <nav className="flex flex-col gap-1 flex-1">
-        {NAV_ITEMS.map(({ label, view, icon }) => {
+        {visibleItems.map(({ label, view, icon }) => {
           const isActive = currentView === view;
           return (
             <button

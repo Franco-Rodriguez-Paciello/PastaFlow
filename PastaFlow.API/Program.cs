@@ -2,6 +2,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 using PastaFlow.API.Endpoints;
 using PastaFlow.API.Middleware;
 using PastaFlow.Application.Commands.Ingredientes;
@@ -45,11 +46,19 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = jwtSection["Issuer"],
             ValidAudience = jwtSection["Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
-            ClockSkew = TimeSpan.Zero
+            ClockSkew = TimeSpan.Zero,
+            // Asegura que [Authorize(Roles="...")] y RequireRole() lean el claim correcto del JWT
+            RoleClaimType = ClaimTypes.Role
         };
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    // Solo el dueño (Admin) puede acceder
+    options.AddPolicy("AdminOnly",       policy => policy.RequireRole("Admin"));
+    // Tanto Admin como Operario pueden acceder
+    options.AddPolicy("AdminOrOperario", policy => policy.RequireRole("Admin", "Operario"));
+});
 
 // Registra automáticamente todos los validadores del ensamblado Application
 builder.Services.AddValidatorsFromAssemblyContaining<RegistrarProduccionCommandValidator>();

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DashboardView from './components/DashboardView';
 import IngredientesView from './components/IngredientesView';
 import LoginView from './components/LoginView';
@@ -9,13 +9,50 @@ import ProduccionDiariaView from './components/ProduccionDiariaView';
 import HistorialProduccionView from './components/HistorialProduccionView';
 import { useAuth } from './context/AuthContext';
 
+// Vistas que solo puede ver un Admin
+const ADMIN_ONLY_VIEWS = new Set(['dashboard', 'insumos', 'rentabilidad', 'recetas', 'historial']);
+
+function AccessDenied({ onRedirect }: { onRedirect: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 select-none">
+      <div className="flex items-center justify-center w-20 h-20 rounded-2xl bg-red-500/10 border border-red-500/20">
+        <span className="text-4xl">🔒</span>
+      </div>
+      <div className="text-center">
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">Acceso Denegado</h2>
+        <p className="text-gray-500 text-sm max-w-xs">
+          No tenés permisos para ver esta sección. Comunicate con el administrador si creés que es un error.
+        </p>
+      </div>
+      <button
+        onClick={onRedirect}
+        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-md"
+      >
+        🏭 Ir a Producción Diaria
+      </button>
+    </div>
+  );
+}
+
 function App() {
-  const { isAuthenticated } = useAuth();
-  // Estado que maneja qué pantalla se muestra en pantalla
-  const [view, setView] = useState<string>('dashboard');
+  const { isAuthenticated, user } = useAuth();
+  const isAdmin = user?.rol === 'Admin';
+
+  // Operario arranca en producción; Admin en dashboard
+  const [view, setView] = useState<string>(() => (isAdmin ? 'dashboard' : 'produccion'));
+
+  // Si el rol cambia (re-login con otro usuario), resetear la vista
+  useEffect(() => {
+    if (!isAdmin && ADMIN_ONLY_VIEWS.has(view)) {
+      setView('produccion');
+    }
+  }, [isAdmin, view]);
 
   // Route guard: show Login if not authenticated
   if (!isAuthenticated) return <LoginView />;
+
+  // Guardián de vista: Operario intentó llegar a una vista Admin
+  const viewBlocked = !isAdmin && ADMIN_ONLY_VIEWS.has(view);
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -24,46 +61,52 @@ function App() {
 
       {/* Contenedor Principal Dinámico */}
       <main className="flex-1 p-8 overflow-y-auto">
-        {view === 'dashboard' && (
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">Panel Principal</h2>
-            <DashboardView />
-          </div>
-        )}
+        {viewBlocked ? (
+          <AccessDenied onRedirect={() => setView('produccion')} />
+        ) : (
+          <>
+            {view === 'dashboard' && (
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-6">Panel Principal</h2>
+                <DashboardView />
+              </div>
+            )}
 
-        {view === 'insumos' && (
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">Gestión de Insumos</h2>
-            <IngredientesView />
-          </div>
-        )}
+            {view === 'insumos' && (
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-6">Gestión de Insumos</h2>
+                <IngredientesView />
+              </div>
+            )}
 
-        {view === 'rentabilidad' && (
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">Panel Analítico</h2>
-            <ProductosAnaliticaView />
-          </div>
-        )}
+            {view === 'rentabilidad' && (
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-6">Panel Analítico</h2>
+                <ProductosAnaliticaView />
+              </div>
+            )}
 
-        {view === 'recetas' && (
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">Creador de Recetas Dinámico</h2>
-            <RecetasCreadorView />
-          </div>
-        )}
+            {view === 'recetas' && (
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-6">Creador de Recetas Dinámico</h2>
+                <RecetasCreadorView />
+              </div>
+            )}
 
-        {view === 'produccion' && (
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">Producción Diaria</h2>
-            <ProduccionDiariaView />
-          </div>
-        )}
+            {view === 'produccion' && (
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-6">Producción Diaria</h2>
+                <ProduccionDiariaView />
+              </div>
+            )}
 
-        {view === 'historial' && (
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">Historial de Producción</h2>
-            <HistorialProduccionView />
-          </div>
+            {view === 'historial' && (
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-6">Historial de Producción</h2>
+                <HistorialProduccionView />
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>
