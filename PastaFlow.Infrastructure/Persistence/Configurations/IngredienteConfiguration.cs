@@ -34,5 +34,19 @@ public class IngredienteConfiguration : IEntityTypeConfiguration<Ingrediente>
 
         builder.Property(i => i.UltimaActualizacionCosto)
             .IsRequired();
+
+        // --- Control de Concurrencia Optimista (xmin) ---
+        // 'xmin' es una columna de sistema de PostgreSQL que contiene el ID de la
+        // transacción que insertó/actualizó la fila por última vez. Nunca se repite
+        // dentro del ciclo de vida de una fila, lo que la convierte en el token de
+        // concurrencia más liviano y confiable disponible en PostgreSQL sin costo alguno.
+        //
+        // IsRowVersion() = ValueGeneratedOnAddOrUpdate() + IsConcurrencyToken()
+        // EF Core añade automáticamente "WHERE xmin = @p_original" en cada UPDATE/DELETE,
+        // lanzando DbUpdateConcurrencyException si otro proceso modificó la fila primero.
+        builder.Property(i => i.Version)
+            .HasColumnName("xmin")
+            .HasColumnType("xid")
+            .IsRowVersion();
     }
 }

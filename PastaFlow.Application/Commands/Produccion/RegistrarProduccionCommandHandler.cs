@@ -22,11 +22,6 @@ public sealed class RegistrarProduccionCommandHandler
         RegistrarProduccionCommand command,
         CancellationToken cancellationToken = default)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(command.ProductoId,
-            nameof(command.ProductoId));
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(command.CantidadProducida,
-            nameof(command.CantidadProducida));
-
         await using var transaction =
             await _context.BeginTransactionAsync(cancellationToken);
 

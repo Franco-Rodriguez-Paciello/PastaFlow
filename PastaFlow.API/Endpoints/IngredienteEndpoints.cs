@@ -39,25 +39,14 @@ public static class IngredienteEndpoints
             RegistrarIngredienteCommandHandler handler,
             CancellationToken ct) =>
         {
-            try
-            {
-                int id = await handler.HandleAsync(command, ct);
-                return Results.Created($"/api/ingredientes/{id}", new { id });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.Conflict(new { error = ex.Message });
-            }
-            catch (ArgumentException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            int id = await handler.HandleAsync(command, ct);
+            return Results.Created($"/api/ingredientes/{id}", new { id });
         })
         .WithName("RegistrarIngrediente")
         .WithSummary("Registra un nuevo ingrediente")
         .Produces<object>(StatusCodes.Status201Created)
-        .Produces<object>(StatusCodes.Status400BadRequest)
-        .Produces<object>(StatusCodes.Status409Conflict);
+        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+        .Produces<ProblemDetails>(StatusCodes.Status409Conflict);
 
         group.MapPut("/{id:int}/costo", async (
             int id,
@@ -65,26 +54,15 @@ public static class IngredienteEndpoints
             ActualizarCostoIngredienteCommandHandler handler,
             CancellationToken ct) =>
         {
-            try
-            {
-                var command = new ActualizarCostoIngredienteCommand(id, body.NuevoCosto);
-                await handler.HandleAsync(command, ct);
-                return Results.NoContent();
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return Results.NotFound(new { error = ex.Message });
-            }
-            catch (ArgumentException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var command = new ActualizarCostoIngredienteCommand(id, body.NuevoCosto);
+            await handler.HandleAsync(command, ct);
+            return Results.NoContent();
         })
         .WithName("ActualizarCostoIngrediente")
         .WithSummary("Actualiza el costo de un ingrediente existente")
         .Produces(StatusCodes.Status204NoContent)
-        .Produces<object>(StatusCodes.Status400BadRequest)
-        .Produces<object>(StatusCodes.Status404NotFound);
+        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
 
         group.MapPatch("/{id:int}/stock", async (
             int id,
@@ -92,29 +70,22 @@ public static class IngredienteEndpoints
             IPastaFlowDbContext context,
             CancellationToken ct) =>
         {
-            try
-            {
-                var ingrediente = await context.Ingredientes
-                    .FirstOrDefaultAsync(i => i.Id == id, ct);
+            var ingrediente = await context.Ingredientes
+                .FirstOrDefaultAsync(i => i.Id == id, ct);
 
-                if (ingrediente is null)
-                    return Results.NotFound(new { error = $"No se encontró un ingrediente con el ID '{id}'." });
+            if (ingrediente is null)
+                return Results.NotFound(new { error = $"No se encontró un ingrediente con el ID '{id}'." });
 
-                ingrediente.AjustarStock(body.NuevoStock);
+            ingrediente.AjustarStock(body.NuevoStock);
 
-                await context.SaveChangesAsync(ct);
-                return Results.NoContent();
-            }
-            catch (ArgumentOutOfRangeException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            await context.SaveChangesAsync(ct);
+            return Results.NoContent();
         })
         .WithName("ActualizarStockIngrediente")
         .WithSummary("Actualiza el stock actual de un ingrediente de forma directa")
         .Produces(StatusCodes.Status204NoContent)
-        .Produces<object>(StatusCodes.Status400BadRequest)
-        .Produces<object>(StatusCodes.Status404NotFound);
+        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
 
         group.MapPatch("/{id:int}/umbral", async (
             int id,
@@ -122,29 +93,22 @@ public static class IngredienteEndpoints
             IPastaFlowDbContext context,
             CancellationToken ct) =>
         {
-            try
-            {
-                var ingrediente = await context.Ingredientes
-                    .FirstOrDefaultAsync(i => i.Id == id, ct);
+            var ingrediente = await context.Ingredientes
+                .FirstOrDefaultAsync(i => i.Id == id, ct);
 
-                if (ingrediente is null)
-                    return Results.NotFound(new { error = $"No se encontró un ingrediente con el ID '{id}'." });
+            if (ingrediente is null)
+                return Results.NotFound(new { error = $"No se encontró un ingrediente con el ID '{id}'." });
 
-                ingrediente.SetUmbralCritico(body.NuevoUmbral);
+            ingrediente.SetUmbralCritico(body.NuevoUmbral);
 
-                await context.SaveChangesAsync(ct);
-                return Results.NoContent();
-            }
-            catch (ArgumentOutOfRangeException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            await context.SaveChangesAsync(ct);
+            return Results.NoContent();
         })
         .WithName("ActualizarUmbralIngrediente")
         .WithSummary("Actualiza el umbral crítico de stock de un ingrediente")
         .Produces(StatusCodes.Status204NoContent)
-        .Produces<object>(StatusCodes.Status400BadRequest)
-        .Produces<object>(StatusCodes.Status404NotFound);
+        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
 
         group.MapGet("/ajustes", async (
             [FromQuery] int? insumoId,
@@ -165,30 +129,15 @@ public static class IngredienteEndpoints
             RegistrarAjusteManualCommandHandler handler,
             CancellationToken ct) =>
         {
-            try
-            {
-                int ajusteId = await handler.HandleAsync(command, ct);
-                return Results.Created($"/api/ingredientes/ajuste/{ajusteId}", new { id = ajusteId });
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return Results.NotFound(new { error = ex.Message });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.UnprocessableEntity(new { error = ex.Message });
-            }
-            catch (ArgumentException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            int ajusteId = await handler.HandleAsync(command, ct);
+            return Results.Created($"/api/ingredientes/ajuste/{ajusteId}", new { id = ajusteId });
         })
         .WithName("RegistrarAjusteManual")
         .WithSummary("Registra un ajuste manual de stock (merma, rotura, conteo físico, compra manual)")
         .Produces<object>(StatusCodes.Status201Created)
-        .Produces<object>(StatusCodes.Status400BadRequest)
-        .Produces<object>(StatusCodes.Status404NotFound)
-        .Produces<object>(StatusCodes.Status422UnprocessableEntity);
+        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
+        .Produces<ProblemDetails>(StatusCodes.Status409Conflict);
 
         return app;
     }

@@ -1,4 +1,5 @@
 import type { HistorialProduccionDto } from '../types/api.types';
+import { throwIfError } from '../lib/apiError';
 
 export interface RegistrarProduccionInput {
   productoId: number;
@@ -11,10 +12,7 @@ export async function registrarProduccion(input: RegistrarProduccionInput): Prom
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   });
-  if (!response.ok) {
-    const body = await response.json().catch(() => ({})) as { error?: string };
-    throw new Error(body.error ?? `Error al registrar producción: ${response.status}`);
-  }
+  await throwIfError(response);
   const data = await response.json() as { id: number };
   return data.id;
 }

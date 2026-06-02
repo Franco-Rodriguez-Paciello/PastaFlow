@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { AjusteStockDto, IngredienteDto } from '../types/api.types';
 import { actualizarCosto, actualizarUmbral, ajustarStock, getHistorialAjustes, getIngredientes, registrarAjuste, type RegistrarAjusteInput } from '../services/ingredienteService';
+import { ApiError } from '../lib/apiError';
 
 interface Props {
   onCostoActualizado?: () => void;
@@ -73,6 +74,8 @@ function AjusteModal({ ingredientes, onClose, onSuccess }: AjusteModalProps) {
   const [observaciones, setObs]     = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError]   = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
+  const [conflictError, setConflictError] = useState(false);
 
   async function handleSubmit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
@@ -82,6 +85,8 @@ function AjusteModal({ ingredientes, onClose, onSuccess }: AjusteModalProps) {
       return;
     }
     setFormError(null);
+    setFieldErrors({});
+    setConflictError(false);
     setSubmitting(true);
     try {
       await registrarAjuste({
@@ -93,7 +98,18 @@ function AjusteModal({ ingredientes, onClose, onSuccess }: AjusteModalProps) {
       });
       onSuccess();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Error al registrar el ajuste.');
+      if (err instanceof ApiError) {
+        if (err.isConflict) {
+          setConflictError(true);
+        } else if (err.isValidation) {
+          setFieldErrors(err.fieldErrors);
+          setFormError('Por favor, corregí los errores indicados.');
+        } else {
+          setFormError(err.detail ?? err.message);
+        }
+      } else {
+        setFormError(err instanceof Error ? err.message : 'Error al registrar el ajuste.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -138,6 +154,21 @@ function AjusteModal({ ingredientes, onClose, onSuccess }: AjusteModalProps) {
         {/* Form */}
         <form onSubmit={(e) => void handleSubmit(e)} className="px-6 py-5 space-y-4">
 
+          {/* Banner conflicto de concurrencia (HTTP 409) */}
+          {conflictError && (
+            <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
+              <span className="mt-0.5 shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-amber-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </span>
+              <div>
+                <p className="font-semibold">Los datos fueron modificados por otro usuario.</p>
+                <p className="mt-0.5 text-xs">Por favor, cerrá este panel y recargá la pantalla antes de continuar.</p>
+              </div>
+            </div>
+          )}
+
           {/* Insumo */}
           <div>
             <label className={labelClass}>Insumo *</label>
@@ -170,11 +201,14 @@ function AjusteModal({ ingredientes, onClose, onSuccess }: AjusteModalProps) {
                 min="0.01"
                 step="0.01"
                 value={cantidad}
-                onChange={(e) => setCantidad(e.target.value)}
+                onChange={(e) => { setCantidad(e.target.value); if (fieldErrors.cantidad) setFieldErrors(p => { const n = {...p}; delete n.cantidad; return n; }); }}
                 placeholder="0.00"
-                className={inputClass}
+                className={`${inputClass}${fieldErrors.cantidad ? ' border-red-400 focus:ring-red-200' : ''}`}
                 required
               />
+              {fieldErrors.cantidad && (
+                <p className="mt-1 text-xs text-red-600">{fieldErrors.cantidad[0]}</p>
+              )}
             </div>
           </div>
 
@@ -205,7 +239,7 @@ function AjusteModal({ ingredientes, onClose, onSuccess }: AjusteModalProps) {
           </div>
 
           {/* Form error */}
-          {formError && (
+          {formError && !conflictError && (
             <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
               {formError}
             </p>
@@ -274,6 +308,8 @@ export default function IngredientesView({ onCostoActualizado }: Props) {
   const [ingredientes, setIngredientes] = useState<IngredienteDto[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [conflictError, setConflictError] = useState<string | null>(null);
+  const conflictTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Cost editing
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -331,6 +367,7 @@ export default function IngredientesView({ onCostoActualizado }: Props) {
     void cargarHistorial();
     return () => {
       if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current);
+      if (conflictTimeoutRef.current) clearTimeout(conflictTimeoutRef.current);
     };
   }, []);
 
@@ -338,6 +375,12 @@ export default function IngredientesView({ onCostoActualizado }: Props) {
     setSuccessMessage(message);
     if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current);
     successTimeoutRef.current = setTimeout(() => setSuccessMessage(null), 3000);
+  }
+
+  function showConflict(message: string): void {
+    setConflictError(message);
+    if (conflictTimeoutRef.current) clearTimeout(conflictTimeoutRef.current);
+    conflictTimeoutRef.current = setTimeout(() => setConflictError(null), 8000);
   }
 
   // ── Cost handlers ────────────────────────────────────────────────────────
@@ -368,7 +411,14 @@ export default function IngredientesView({ onCostoActualizado }: Props) {
       showSuccess('Costo actualizado correctamente.');
       onCostoActualizado?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al actualizar el costo.');
+      if (err instanceof ApiError && err.isConflict) {
+        setEditingId(null);
+        setEditingValue('');
+        showConflict('Los datos fueron modificados por otro usuario. La tabla se actualizó automáticamente.');
+        await cargarIngredientes();
+      } else {
+        setError(err instanceof ApiError ? (err.detail ?? err.message) : err instanceof Error ? err.message : 'Error al actualizar el costo.');
+      }
     } finally {
       setSavingId(null);
     }
@@ -403,7 +453,14 @@ export default function IngredientesView({ onCostoActualizado }: Props) {
       );
       showSuccess('Alerta mínima actualizada correctamente.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al actualizar el umbral.');
+      if (err instanceof ApiError && err.isConflict) {
+        setEditingUmbralId(null);
+        setEditingUmbralValue('');
+        showConflict('Los datos fueron modificados por otro usuario. La tabla se actualizó automáticamente.');
+        await cargarIngredientes();
+      } else {
+        setError(err instanceof ApiError ? (err.detail ?? err.message) : err instanceof Error ? err.message : 'Error al actualizar el umbral.');
+      }
     } finally {
       setSavingUmbralId(null);
     }
@@ -436,7 +493,14 @@ export default function IngredientesView({ onCostoActualizado }: Props) {
       await cargarIngredientes();
       showSuccess('Stock ajustado correctamente.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al ajustar el stock.');
+      if (err instanceof ApiError && err.isConflict) {
+        setEditingStockId(null);
+        setEditingStockValue('');
+        showConflict('Los datos fueron modificados por otro usuario. La tabla se actualizó automáticamente.');
+        await cargarIngredientes();
+      } else {
+        setError(err instanceof ApiError ? (err.detail ?? err.message) : err instanceof Error ? err.message : 'Error al ajustar el stock.');
+      }
     } finally {
       setSavingStockId(null);
     }
@@ -448,14 +512,6 @@ export default function IngredientesView({ onCostoActualizado }: Props) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6 text-red-600 font-medium">
-        {error}
       </div>
     );
   }
@@ -488,12 +544,46 @@ export default function IngredientesView({ onCostoActualizado }: Props) {
         />
       )}
 
+      {/* Toast éxito (fixed) */}
       {successMessage && (
         <div className="fixed top-4 right-4 z-50 flex items-center gap-2 bg-green-50 border border-green-200 text-green-800 text-sm font-medium px-4 py-3 rounded-lg shadow-md">
           <svg className="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
           {successMessage}
+        </div>
+      )}
+
+      {/* Toast conflicto de concurrencia (fixed, amber) */}
+      {conflictError && (
+        <div className="fixed top-4 right-4 z-50 flex items-start gap-3 bg-amber-50 border border-amber-300 text-amber-800 text-sm px-4 py-3 rounded-lg shadow-md max-w-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mt-0.5 shrink-0 text-amber-500" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+          <div className="flex-1">
+            <p className="font-semibold">Conflicto de concurrencia</p>
+            <p className="mt-0.5 text-xs">{conflictError}</p>
+          </div>
+          <button onClick={() => setConflictError(null)} className="text-amber-400 hover:text-amber-700 transition-colors shrink-0" aria-label="Cerrar">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {/* Banner error general (inline) */}
+      {error && (
+        <div className="mb-4 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mt-0.5 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+          <span className="flex-1">{error}</span>
+          <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 transition-colors shrink-0" aria-label="Cerrar">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
         </div>
       )}
 

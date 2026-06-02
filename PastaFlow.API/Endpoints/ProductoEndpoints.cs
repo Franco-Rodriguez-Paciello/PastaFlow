@@ -28,25 +28,14 @@ public static class ProductoEndpoints
             RegistrarProductoCommandHandler handler,
             CancellationToken ct) =>
         {
-            try
-            {
-                int id = await handler.HandleAsync(command, ct);
-                return Results.Created($"/api/productos/{id}", new { id });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.Conflict(new { error = ex.Message });
-            }
-            catch (ArgumentException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            int id = await handler.HandleAsync(command, ct);
+            return Results.Created($"/api/productos/{id}", new { id });
         })
         .WithName("RegistrarProducto")
         .WithSummary("Registra un nuevo producto")
         .Produces<object>(StatusCodes.Status201Created)
-        .Produces<object>(StatusCodes.Status400BadRequest)
-        .Produces<object>(StatusCodes.Status409Conflict);
+        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+        .Produces<ProblemDetails>(StatusCodes.Status409Conflict);
 
         group.MapPost("/{id:int}/receta", async (
             int id,
@@ -54,30 +43,15 @@ public static class ProductoEndpoints
             AsignarRecetaCommandHandler handler,
             CancellationToken ct) =>
         {
-            try
-            {
-                var command = new AsignarRecetaCommand(id, ingredientes);
-                await handler.HandleAsync(command, ct);
-                return Results.NoContent();
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return Results.NotFound(new { error = ex.Message });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
-            catch (ArgumentException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var command = new AsignarRecetaCommand(id, ingredientes);
+            await handler.HandleAsync(command, ct);
+            return Results.NoContent();
         })
         .WithName("AsignarReceta")
         .WithSummary("Asigna o reemplaza la receta (bill of materials) de un producto compuesto")
         .Produces(StatusCodes.Status204NoContent)
-        .Produces<object>(StatusCodes.Status400BadRequest)
-        .Produces<object>(StatusCodes.Status404NotFound);
+        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
 
         group.MapGet("/{productId:int}/receta", async (
             int productId,

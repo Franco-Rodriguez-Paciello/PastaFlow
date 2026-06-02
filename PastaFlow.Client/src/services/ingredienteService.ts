@@ -1,4 +1,5 @@
 import type { AjusteStockDto, IngredienteDto } from '../types/api.types';
+import { throwIfError } from '../lib/apiError';
 
 export interface RegistrarAjusteInput {
   insumoId: number;
@@ -19,40 +20,28 @@ export async function getIngredientes(): Promise<IngredienteDto[]> {
 export async function actualizarCosto(id: number, nuevoCosto: number): Promise<void> {
   const response = await fetch(`/api/ingredientes/${id}/costo`, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ nuevoCosto }),
   });
-  if (!response.ok) {
-    throw new Error(`Error al actualizar costo: ${response.status} ${response.statusText}`);
-  }
+  await throwIfError(response);
 }
 
 export async function ajustarStock(id: number, nuevoStock: number): Promise<void> {
   const response = await fetch(`/api/ingredientes/${id}/stock`, {
     method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ nuevoStock }),
   });
-  if (!response.ok) {
-    throw new Error(`Error al ajustar stock: ${response.status} ${response.statusText}`);
-  }
+  await throwIfError(response);
 }
 
 export async function actualizarUmbral(id: number, nuevoUmbral: number): Promise<void> {
   const response = await fetch(`/api/ingredientes/${id}/umbral`, {
     method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ nuevoUmbral }),
   });
-  if (!response.ok) {
-    throw new Error(`Error al actualizar umbral: ${response.status} ${response.statusText}`);
-  }
+  await throwIfError(response);
 }
 
 export async function getHistorialAjustes(insumoId?: number, take = 100): Promise<AjusteStockDto[]> {
@@ -72,10 +61,7 @@ export async function registrarAjuste(input: RegistrarAjusteInput): Promise<numb
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   });
-  if (!response.ok) {
-    const body = await response.json().catch(() => ({})) as { error?: string };
-    throw new Error(body.error ?? `Error al registrar ajuste: ${response.status}`);
-  }
+  await throwIfError(response);
   const data = await response.json() as { id: number };
   return data.id;
 }

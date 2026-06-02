@@ -10,6 +10,13 @@ public class Ingrediente
     public decimal UmbralCritico { get; private set; }
     public DateTime UltimaActualizacionCosto { get; private set; }
 
+    /// <summary>
+    /// Token de concurrencia optimista mapeado a la columna de sistema 'xmin' de PostgreSQL.
+    /// EF Core lo incluye automáticamente en el WHERE de cada UPDATE/DELETE para detectar
+    /// modificaciones concurrentes y lanzar DbUpdateConcurrencyException.
+    /// </summary>
+    public uint Version { get; set; }
+
     private Ingrediente() { }
 
     public Ingrediente(string nombre, UnidadMedida unidadMedida, decimal costoActual)

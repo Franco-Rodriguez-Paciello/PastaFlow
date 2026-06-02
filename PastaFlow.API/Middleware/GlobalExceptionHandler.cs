@@ -1,11 +1,16 @@
+using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using System.Net;
-using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 
 namespace PastaFlow.API.Middleware;
 
-public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger, IHostEnvironment env) : IExceptionHandler
+/// <summary>
+/// Manejador global de excepciones (RFC 7807 Problem Details).
+/// Captura excepciones no manejadas y las transforma en respuestas HTTP estructuradas,
+/// eliminando la necesidad de bloques try-catch en endpoints y handlers.
+/// </summary>
+public sealed class CustomExceptionHandler(ILogger<CustomExceptionHandler> logger) : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(
         HttpContext httpContext,
@@ -14,20 +19,74 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger, IHos
     {
         logger.LogError(exception, "Unhandled exception: {Message}", exception.Message);
 
-        var problemDetails = new ProblemDetails
+        var problemDetails = exception switch
         {
-            Status = (int)HttpStatusCode.InternalServerError,
-            Title = "Un error inesperado ocurrió en el servidor",
-            Detail = env.IsDevelopment() ? exception.Message : null
+            // FluentValidation: campo(s) con errores → 400 Bad Request
+            ValidationException ve => BuildValidationProblem(ve),
+
+            // Argumento inválido lanzado desde el dominio → 400 Bad Request
+            ArgumentException => new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Datos inválidos",
+                Detail = exception.Message
+            },
+
+            // Recurso no encontrado → 404 Not Found
+            KeyNotFoundException => new ProblemDetails
+            {
+                Status = StatusCodes.Status404NotFound,
+                Title = "Recurso no encontrado",
+                Detail = exception.Message
+            },
+
+            // Regla de negocio violada (stock insuficiente, tipo inválido, etc.) → 409 Conflict
+            InvalidOperationException => new ProblemDetails
+            {
+                Status = StatusCodes.Status409Conflict,
+                Title = "Operación no permitida",
+                Detail = exception.Message
+            },
+
+            // Escritura concurrente detectada por xmin / RowVersion → 409 Conflict
+            DbUpdateConcurrencyException => new ProblemDetails
+            {
+                Status = StatusCodes.Status409Conflict,
+                Title = "Conflicto de concurrencia",
+                Detail = "Los datos fueron modificados por otro usuario. Por favor, recarga la pantalla."
+            },
+
+            // Cualquier otro error no previsto → 500 Internal Server Error
+            _ => new ProblemDetails
+            {
+                Status = StatusCodes.Status500InternalServerError,
+                Title = "Error interno del servidor",
+                Detail = "Un error inesperado ocurrió. Por favor, intente más tarde."
+            }
         };
 
-        httpContext.Response.StatusCode = problemDetails.Status.Value;
-        httpContext.Response.ContentType = "application/problem+json";
-
-        await httpContext.Response.WriteAsync(
-            JsonSerializer.Serialize(problemDetails),
-            cancellationToken);
+        httpContext.Response.StatusCode = problemDetails.Status!.Value;
+        await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
 
         return true;
+    }
+
+    private static ProblemDetails BuildValidationProblem(ValidationException ve)
+    {
+        var errors = ve.Errors
+            .GroupBy(e => e.PropertyName)
+            .ToDictionary(
+                g => g.Key,
+                g => (object)g.Select(e => e.ErrorMessage).ToArray());
+
+        var problem = new ProblemDetails
+        {
+            Status = StatusCodes.Status400BadRequest,
+            Title = "Validación fallida",
+            Detail = "Uno o más campos contienen errores."
+        };
+
+        problem.Extensions["errors"] = errors;
+        return problem;
     }
 }

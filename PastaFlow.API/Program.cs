@@ -1,3 +1,4 @@
+using FluentValidation;
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using PastaFlow.API.Endpoints;
@@ -21,8 +22,11 @@ builder.Services.AddOpenApi();
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
-builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddExceptionHandler<CustomExceptionHandler>();
 builder.Services.AddProblemDetails();
+
+// Registra automáticamente todos los validadores del ensamblado Application
+builder.Services.AddValidatorsFromAssemblyContaining<RegistrarProduccionCommandValidator>();
 
 // Persistencia
 builder.Services.AddDbContext<PastaFlowDbContext>(options =>

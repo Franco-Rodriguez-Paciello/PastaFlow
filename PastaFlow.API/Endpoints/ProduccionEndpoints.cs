@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using PastaFlow.API.Middleware;
 using PastaFlow.Application.Commands.Produccion;
 using PastaFlow.Application.DTOs;
 using PastaFlow.Application.Queries.Produccion;
@@ -18,16 +19,9 @@ public static class ProduccionEndpoints
             GetHistorialProduccionQueryHandler handler,
             CancellationToken ct) =>
         {
-            try
-            {
-                var query = new GetHistorialProduccionQuery(fechaDesde, fechaHasta, productoId);
-                IReadOnlyCollection<HistorialProduccionDto> historial = await handler.HandleAsync(query, ct);
-                return Results.Ok(historial);
-            }
-            catch (ArgumentException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            var query = new GetHistorialProduccionQuery(fechaDesde, fechaHasta, productoId);
+            IReadOnlyCollection<HistorialProduccionDto> historial = await handler.HandleAsync(query, ct);
+            return Results.Ok(historial);
         })
         .WithName("GetHistorialProduccion")
         .WithSummary("Retorna el historial de producciones con filtros opcionales por producto y rango de fechas")
@@ -39,29 +33,16 @@ public static class ProduccionEndpoints
             RegistrarProduccionCommandHandler handler,
             CancellationToken ct) =>
         {
-            try
-            {
-                int registroId = await handler.HandleAsync(command, ct);
-                return Results.Created($"/api/produccion/{registroId}", new { id = registroId });
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return Results.NotFound(new { error = ex.Message });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
-            catch (ArgumentException ex)
-            {
-                return Results.BadRequest(new { error = ex.Message });
-            }
+            int registroId = await handler.HandleAsync(command, ct);
+            return Results.Created($"/api/produccion/{registroId}", new { id = registroId });
         })
+        .AddEndpointFilter<ValidationFilter<RegistrarProduccionCommand>>()
         .WithName("RegistrarProduccion")
         .WithSummary("Registra una producción diaria: descuenta insumos y aumenta stock del producto terminado")
         .Produces<object>(StatusCodes.Status201Created)
-        .Produces<object>(StatusCodes.Status400BadRequest)
-        .Produces<object>(StatusCodes.Status404NotFound);
+        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
+        .Produces<ProblemDetails>(StatusCodes.Status409Conflict);
 
         return app;
     }
