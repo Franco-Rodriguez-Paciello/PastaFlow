@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Wallet, Factory, TriangleAlert, CircleCheck, ShoppingCart, Clock } from 'lucide-react';
-import type { DashboardStatsDto, StockCriticoItemDto, UltimaProduccionItemDto } from '../types/api.types';
-import { getDashboardStats } from '../services/dashboardService';
+import { Wallet, Factory, TriangleAlert, CircleCheck, ShoppingCart, Clock, TrendingUp, Banknote, CreditCard } from 'lucide-react';
+import type { DashboardStatsDto, FinancialDashboardDto, ProductoMasVendidoDto, StockCriticoItemDto, UltimaProduccionItemDto } from '../types/api.types';
+import { getDashboardStats, getFinancialDashboard } from '../services/dashboardService';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -79,6 +79,171 @@ function MetricCard({ title, value, icon, iconBg, iconColor, valueColor = 'text-
       <p className={`text-3xl font-bold tracking-tight ${valueColor}`}>{value}</p>
       {subtitle && <p className="text-xs text-gray-400">{subtitle}</p>}
     </div>
+  );
+}
+
+// ─── Financial Metric Card ────────────────────────────────────────────────────
+
+interface FinancialCardProps {
+  title: string;
+  value: string;
+  icon: React.ReactNode;
+  gradient: string;
+  iconBg: string;
+}
+
+function FinancialCard({ title, value, icon, gradient, iconBg }: FinancialCardProps) {
+  return (
+    <div className={`${gradient} rounded-2xl p-5 flex items-center gap-4 shadow-sm border`}>
+      <div className={`${iconBg} rounded-xl p-3 shrink-0`}>
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className="text-xs font-semibold uppercase tracking-wider opacity-70 truncate">{title}</p>
+        <p className="text-2xl font-bold tracking-tight mt-0.5 truncate">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Top 5 Productos ──────────────────────────────────────────────────────────
+
+interface Top5Props {
+  items: ProductoMasVendidoDto[];
+}
+
+function Top5ProductosPanel({ items }: Top5Props) {
+  const maxUnidades = items.length > 0 ? Math.max(...items.map((i) => i.totalUnidadesVendidas)) : 1;
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col">
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-2">
+          <TrendingUp size={18} className="text-gray-500" strokeWidth={1.8} />
+          <h3 className="text-base font-semibold text-gray-800">Ranking de Pastas</h3>
+        </div>
+        <span className="text-xs font-medium text-gray-400 bg-gray-100 px-2.5 py-1 rounded-full">
+          Más vendidas hoy
+        </span>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="flex flex-col items-center justify-center flex-1 gap-3 py-8 text-gray-400 bg-gray-50 rounded-lg">
+          <TrendingUp size={28} strokeWidth={1.5} />
+          <p className="text-sm font-medium">Sin ventas registradas hoy</p>
+        </div>
+      ) : (
+        <ol className="flex flex-col gap-4">
+          {items.map((item, idx) => {
+            const pct = maxUnidades > 0 ? (item.totalUnidadesVendidas / maxUnidades) * 100 : 0;
+            const colors = [
+              'bg-yellow-400',
+              'bg-gray-400',
+              'bg-orange-400',
+              'bg-blue-400',
+              'bg-emerald-400',
+            ];
+            return (
+              <li key={item.productoId}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 shrink-0">
+                      {idx + 1}
+                    </span>
+                    <span className="text-sm font-medium text-gray-700 truncate">{item.nombreProducto}</span>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0 ml-2">
+                    <span className="text-xs font-semibold text-gray-500 tabular-nums">
+                      {item.totalUnidadesVendidas} uds.
+                    </span>
+                    <span className="text-xs font-bold text-gray-800 tabular-nums">
+                      {formatCurrency(item.totalFacturado)}
+                    </span>
+                  </div>
+                </div>
+                <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${colors[idx] ?? 'bg-blue-400'}`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </div>
+  );
+}
+
+// ─── Financial Section ────────────────────────────────────────────────────────
+
+function FinancialSection() {
+  const [data, setData] = useState<FinancialDashboardDto | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    getFinancialDashboard()
+      .then((d) => { if (!cancelled) setData(d); })
+      .catch((err: unknown) => { if (!cancelled) setError(err instanceof Error ? err.message : 'Error'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  if (loading) {
+    return (
+      <>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-24 rounded-2xl bg-gray-100 animate-pulse" />
+          ))}
+        </div>
+        <div className="h-56 rounded-xl bg-gray-100 animate-pulse" />
+      </>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm p-4">
+        No se pudieron cargar los datos financieros: {error}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {/* Tarjetas financieras */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <FinancialCard
+          title="Caja Total Hoy"
+          value={formatCurrency(data.ventasTotalesHoy)}
+          icon={<Wallet size={22} strokeWidth={1.8} className="text-emerald-600" />}
+          gradient="bg-gradient-to-br from-emerald-50 to-green-100 border-emerald-200 text-emerald-900"
+          iconBg="bg-white/70"
+        />
+        <FinancialCard
+          title="Ingresos en Efectivo"
+          value={formatCurrency(data.totalEfectivoHoy)}
+          icon={<Banknote size={22} strokeWidth={1.8} className="text-blue-600" />}
+          gradient="bg-gradient-to-br from-blue-50 to-sky-100 border-blue-200 text-blue-900"
+          iconBg="bg-white/70"
+        />
+        <FinancialCard
+          title="Por Transferencia"
+          value={formatCurrency(data.totalTransferenciaHoy)}
+          icon={<CreditCard size={22} strokeWidth={1.8} className="text-violet-600" />}
+          gradient="bg-gradient-to-br from-violet-50 to-purple-100 border-violet-200 text-violet-900"
+          iconBg="bg-white/70"
+        />
+      </div>
+
+      {/* Top 5 */}
+      <Top5ProductosPanel items={data.top5ProductosMasVendidos} />
+    </>
   );
 }
 
@@ -279,6 +444,14 @@ export default function DashboardView() {
         <StockCriticoPanel items={stats.listaStockCritico} />
         <ProduccionRecientePanel items={stats.ultimasProducciones} />
       </div>
+
+      {/* ── Sección Financiera ── */}
+      <div className="flex items-center gap-3 mt-2">
+        <div className="h-px flex-1 bg-gray-200" />
+        <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Caja del Día</span>
+        <div className="h-px flex-1 bg-gray-200" />
+      </div>
+      <FinancialSection />
     </div>
   );
 }

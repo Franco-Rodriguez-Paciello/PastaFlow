@@ -1,4 +1,4 @@
-import type { DashboardStatsDto } from '../types/api.types';
+import type { DashboardStatsDto, FinancialDashboardDto } from '../types/api.types';
 import { apiFetch } from '../lib/apiFetch';
 
 export async function getDashboardStats(): Promise<DashboardStatsDto> {
@@ -8,4 +8,13 @@ export async function getDashboardStats(): Promise<DashboardStatsDto> {
     throw new Error(body.detail ?? `Error al obtener estadísticas: ${response.status}`);
   }
   return response.json() as Promise<DashboardStatsDto>;
+}
+
+export async function getFinancialDashboard(): Promise<FinancialDashboardDto> {
+  const response = await apiFetch('/api/dashboard/financiero');
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({})) as { detail?: string };
+    throw new Error(body.detail ?? `Error al obtener datos financieros: ${response.status}`);
+  }
+  return response.json() as Promise<FinancialDashboardDto>;
 }

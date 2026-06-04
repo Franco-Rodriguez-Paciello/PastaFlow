@@ -21,6 +21,8 @@ public sealed class TestDbContext : DbContext, IPastaFlowDbContext
     public DbSet<HistorialProduccion> HistorialProduccion => Set<HistorialProduccion>();
     public DbSet<AjusteStock> AjustesStock => Set<AjusteStock>();
     public DbSet<Usuario> Usuarios => Set<Usuario>();
+    public DbSet<Venta> Ventas => Set<Venta>();
+    public DbSet<DetalleVenta> DetallesVenta => Set<DetalleVenta>();
 
     /// <summary>
     /// Retorna una transacción no-operación. El proveedor InMemory no soporta

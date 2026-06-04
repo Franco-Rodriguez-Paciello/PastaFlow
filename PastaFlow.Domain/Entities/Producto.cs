@@ -48,4 +48,15 @@ public class Producto
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(cantidad);
         StockActual += cantidad;
     }
+
+    public void DescontarStock(int cantidad)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(cantidad);
+
+        if (StockActual < cantidad)
+            throw new InvalidOperationException(
+                $"Stock insuficiente para '{Nombre}'. Stock disponible: {StockActual}, solicitado: {cantidad}.");
+
+        StockActual -= cantidad;
+    }
 }

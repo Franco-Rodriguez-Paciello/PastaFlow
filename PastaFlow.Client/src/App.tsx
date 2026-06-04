@@ -7,6 +7,7 @@ import SideBar from './components/SideBar';
 import RecetasCreadorView from './components/RecetasCreadorView';
 import ProduccionDiariaView from './components/ProduccionDiariaView';
 import HistorialProduccionView from './components/HistorialProduccionView';
+import VentasView from './components/VentasView';
 import { useAuth } from './context/AuthContext';
 
 // Vistas que solo puede ver un Admin
@@ -97,6 +98,13 @@ function App() {
               <div>
                 <h2 className="text-2xl font-bold text-gray-800 mb-6">Producción Diaria</h2>
                 <ProduccionDiariaView />
+              </div>
+            )}
+
+            {view === 'ventas' && (
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-6">Punto de Venta</h2>
+                <VentasView />
               </div>
             )}
 

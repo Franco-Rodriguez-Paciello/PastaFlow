@@ -13,6 +13,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Rentabilidad',          view: 'rentabilidad',icon: '📊', adminOnly: true  },
   { label: 'Creador de Recetas',    view: 'recetas',     icon: '📋', adminOnly: true  },
   { label: 'Producción Diaria',     view: 'produccion',  icon: '🏭'                   },
+  { label: 'Punto de Venta',        view: 'ventas',      icon: '🛒'                   },
   { label: 'Historial de Producción', view: 'historial', icon: '📜', adminOnly: true  },
 ];
 

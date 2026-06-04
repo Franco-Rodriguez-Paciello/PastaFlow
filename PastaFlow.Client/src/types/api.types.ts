@@ -92,3 +92,49 @@ export interface DashboardStatsDto {
   listaStockCritico: StockCriticoItemDto[];
   ultimasProducciones: UltimaProduccionItemDto[];
 }
+
+// ─── Ventas ───────────────────────────────────────────────────────────────────
+
+export type MetodoPago = 'Efectivo' | 'Transferencia';
+
+export interface ItemVentaDto {
+  productoId: number;
+  cantidad: number;
+}
+
+export interface RegistrarVentaDto {
+  metodoPago: MetodoPago;
+  items: ItemVentaDto[];
+}
+
+export interface DetalleVentaDto {
+  productoId: number;
+  nombreProducto: string;
+  cantidad: number;
+  precioUnitario: number;
+  subtotal: number;
+}
+
+export interface VentaRegistradaDto {
+  id: number;
+  fecha: string;
+  total: number;
+  metodoPago: MetodoPago;
+  detalles: DetalleVentaDto[];
+}
+
+// ─── Financial Dashboard ──────────────────────────────────────────────────────
+
+export interface ProductoMasVendidoDto {
+  productoId: number;
+  nombreProducto: string;
+  totalUnidadesVendidas: number;
+  totalFacturado: number;
+}
+
+export interface FinancialDashboardDto {
+  ventasTotalesHoy: number;
+  totalEfectivoHoy: number;
+  totalTransferenciaHoy: number;
+  top5ProductosMasVendidos: ProductoMasVendidoDto[];
+}

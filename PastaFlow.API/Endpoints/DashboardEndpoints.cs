@@ -32,6 +32,18 @@ public static class DashboardEndpoints
         .Produces<DashboardStatsDto>(StatusCodes.Status200OK)
         .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
 
+        group.MapGet("/financiero", async (
+            GetFinancialDashboardQueryHandler handler,
+            CancellationToken ct) =>
+        {
+            FinancialDashboardDto resultado = await handler.HandleAsync(new GetFinancialDashboardQuery(), ct);
+            return Results.Ok(resultado);
+        })
+        .WithName("GetFinancialDashboard")
+        .WithSummary("Retorna ventas del día, desglose por método de pago y top 5 productos más vendidos")
+        .Produces<FinancialDashboardDto>(StatusCodes.Status200OK)
+        .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
+
         return app;
     }
 }

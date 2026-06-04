@@ -8,6 +8,7 @@ using PastaFlow.API.Middleware;
 using PastaFlow.Application.Commands.Ingredientes;
 using PastaFlow.Application.Commands.Produccion;
 using PastaFlow.Application.Commands.Productos;
+using PastaFlow.Application.Commands.Ventas;
 using PastaFlow.Application.Interfaces;
 using PastaFlow.Application.Queries.Dashboard;
 using PastaFlow.Application.Queries.Ingredientes;
@@ -84,6 +85,8 @@ builder.Services.AddScoped<GetRecetaByProductoQueryHandler>();
 builder.Services.AddScoped<RegistrarProduccionCommandHandler>();
 builder.Services.AddScoped<GetHistorialProduccionQueryHandler>();
 builder.Services.AddScoped<GetDashboardStatsQueryHandler>();
+builder.Services.AddScoped<GetFinancialDashboardQueryHandler>();
+builder.Services.AddScoped<RegistrarVentaCommandHandler>();
 
 var app = builder.Build();
 
@@ -102,6 +105,7 @@ app.MapAuthEndpoints();
 app.MapIngredienteEndpoints();
 app.MapProductoEndpoints();
 app.MapProduccionEndpoints();
+app.MapVentasEndpoints();
 app.MapDashboardEndpoints();
 
 app.Run();
