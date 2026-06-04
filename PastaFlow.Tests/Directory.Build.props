@@ -1,0 +1,16 @@
+<!--
+  Redirige bin/ y obj/ del proyecto de Tests a una ruta LOCAL fuera de OneDrive.
+  Esto evita que Windows Application Control / Smart App Control bloquee la carga
+  de los DLLs compilados, ya que los archivos generados en OneDrive pueden quedar
+  marcados con Zone.Identifier (internet zone) al ser sincronizados.
+
+  IMPORTANTE: Este archivo debe estar en la MISMA carpeta que el .csproj y es evaluado
+  por MSBuild ANTES de Microsoft.Common.props, por eso BaseOutputPath y
+  BaseIntermediateOutputPath funcionan correctamente aquí y no dentro del .csproj.
+-->
+<Project>
+  <PropertyGroup>
+    <BaseOutputPath>C:\Dev\PastaFlowBuild\PastaFlow.Tests\bin\</BaseOutputPath>
+    <BaseIntermediateOutputPath>C:\Dev\PastaFlowBuild\PastaFlow.Tests\obj\</BaseIntermediateOutputPath>
+  </PropertyGroup>
+</Project>
