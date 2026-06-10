@@ -44,6 +44,24 @@ public static class ProduccionEndpoints
         .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
         .Produces<ProblemDetails>(StatusCodes.Status409Conflict);
 
+        group.MapPost("/verificar", async (
+            [FromBody] CrearOrdenProduccionCommand command,
+            CrearOrdenProduccionCommandHandler handler,
+            CancellationToken ct) =>
+        {
+            CrearOrdenProduccionCommand verificationCommand =
+                command with { EsVerificacionPrevia = true };
+
+            OrdenProduccionDto orden = await handler.HandleAsync(verificationCommand, ct);
+            return Results.Ok(orden);
+        })
+        .AddEndpointFilter<ValidationFilter<CrearOrdenProduccionCommand>>()
+        .WithName("VerificarOrdenProduccion")
+        .WithSummary("Verifica una orden de producción: calcula costos y valida stock sin modificar datos")
+        .Produces<OrdenProduccionDto>(StatusCodes.Status200OK)
+        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
+
         return app;
     }
 }

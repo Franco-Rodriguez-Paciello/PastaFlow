@@ -85,6 +85,29 @@ export interface HistorialProduccionDto {
   fechaDeRegistro: string; // ISO 8601
 }
 
+export interface DetalleCostoIngredienteDto {
+  ingredienteId: number;
+  nombreIngrediente: string;
+  cantidadRequeridaPorUnidad: number;
+  cantidadTotalRequerida: number;
+  costoUnitario: number;
+  costoParcial: number;
+  stockDisponible: number;
+  stockSuficiente: boolean;
+}
+
+export interface OrdenProduccionDto {
+  productoId: number;
+  productoNombre: string;
+  cantidadProducida: number;
+  costoTotal: number;
+  precioVentaUnitario: number;
+  margenEstimado: number;
+  stockSuficiente: boolean;
+  esVerificacionPrevia: boolean;
+  detalleCostos: DetalleCostoIngredienteDto[];
+}
+
 export interface DashboardStatsDto {
   valorTotalInsumos: number;
   produccionHoy: number;

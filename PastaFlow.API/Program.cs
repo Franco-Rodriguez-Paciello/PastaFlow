@@ -14,6 +14,7 @@ using PastaFlow.Application.Queries.Dashboard;
 using PastaFlow.Application.Queries.Ingredientes;
 using PastaFlow.Application.Queries.Produccion;
 using PastaFlow.Application.Queries.Productos;
+using PastaFlow.Domain.Services;
 using PastaFlow.Infrastructure.Persistence;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -70,6 +71,9 @@ builder.Services.AddDbContext<PastaFlowDbContext>(options =>
 
 builder.Services.AddScoped<IPastaFlowDbContext, PastaFlowDbContext>();
 
+// Servicios de dominio
+builder.Services.AddScoped<ICostoProduccionService, CostoProduccionService>();
+
 // Handlers CQRS
 builder.Services.AddScoped<RegistrarIngredienteCommandHandler>();
 builder.Services.AddScoped<ActualizarCostoIngredienteCommandHandler>();
@@ -82,6 +86,7 @@ builder.Services.AddScoped<GuardarRecetaCommandHandler>();
 builder.Services.AddScoped<GetProductosQueryHandler>();
 builder.Services.AddScoped<GetProductProfitabilityQueryHandler>();
 builder.Services.AddScoped<GetRecetaByProductoQueryHandler>();
+builder.Services.AddScoped<CrearOrdenProduccionCommandHandler>();
 builder.Services.AddScoped<RegistrarProduccionCommandHandler>();
 builder.Services.AddScoped<GetHistorialProduccionQueryHandler>();
 builder.Services.AddScoped<GetDashboardStatsQueryHandler>();

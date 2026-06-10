@@ -1,10 +1,24 @@
-import type { HistorialProduccionDto } from '../types/api.types';
+import type { HistorialProduccionDto, OrdenProduccionDto } from '../types/api.types';
 import { throwIfError } from '../lib/apiError';
 import { apiFetch } from '../lib/apiFetch';
 
-export interface RegistrarProduccionInput {
+export interface OrdenProduccionInput {
   productoId: number;
   cantidadProducida: number;
+}
+
+export interface RegistrarProduccionInput extends OrdenProduccionInput {}
+
+export async function verificarOrdenProduccion(
+  input: OrdenProduccionInput,
+): Promise<OrdenProduccionDto> {
+  const response = await apiFetch('/api/produccion/verificar', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  await throwIfError(response);
+  return response.json() as Promise<OrdenProduccionDto>;
 }
 
 export async function registrarProduccion(input: RegistrarProduccionInput): Promise<number> {
