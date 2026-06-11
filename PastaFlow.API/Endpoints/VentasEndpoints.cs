@@ -30,7 +30,7 @@ public static class VentasEndpoints
             VentaRegistradaDto resultado = await handler.HandleAsync(command, ct);
             return Results.Created($"/api/ventas/{resultado.Id}", resultado);
         })
-        .AddEndpointFilter<ValidationFilter<RegistrarVentaCommand>>()
+        .AddEndpointFilter<ValidationFilter<RegistrarVentaDto>>()
         .WithName("RegistrarVenta")
         .WithSummary("Registra una venta, descuenta el stock de productos terminados y persiste el ticket")
         .Produces<VentaRegistradaDto>(StatusCodes.Status201Created)

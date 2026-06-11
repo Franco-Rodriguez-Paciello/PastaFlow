@@ -1,3 +1,5 @@
+using PastaFlow.Domain.Exceptions;
+
 namespace PastaFlow.Domain.Entities;
 
 public class Ingrediente
@@ -57,21 +59,19 @@ public class Ingrediente
         StockActual += cantidad;
     }
 
+    /// <summary>
+    /// Descuenta stock en la unidad de medida del insumo (kg, gr, unidades, etc.).
+    /// Lanza <see cref="InvalidDomainOperationException"/> si el saldo quedaría negativo.
+    /// </summary>
     public void RestarStock(decimal cantidad)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(cantidad);
-        if (StockActual - cantidad < 0)
-            throw new InvalidOperationException(
-                $"Stock insuficiente. Stock actual: {StockActual}, cantidad a restar: {cantidad}.");
-        StockActual -= cantidad;
-    }
 
-    /// <summary>
-    /// Descuenta la cantidad indicada del stock. Permite stock negativo (modo permisivo).
-    /// </summary>
-    public void DescontarStock(decimal cantidad)
-    {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(cantidad);
+        if (StockActual - cantidad < 0)
+            throw new InvalidDomainOperationException(
+                $"Stock insuficiente para el ingrediente '{Nombre}'. " +
+                $"Stock disponible: {StockActual}, requerido: {cantidad}.");
+
         StockActual -= cantidad;
     }
 }

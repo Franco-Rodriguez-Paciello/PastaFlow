@@ -5,4 +5,6 @@ public sealed record HistorialProduccionDto(
     int ProductoId,
     string NombreProducto,
     decimal CantidadProducida,
+    decimal CostoTotalReal,
+    decimal CostoUnitarioReal,
     DateTime FechaDeRegistro);

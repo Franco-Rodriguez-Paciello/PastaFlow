@@ -47,7 +47,7 @@ public sealed class RegistrarAjusteManualCommandHandler
             }
             else
             {
-                // RestarStock lanza InvalidOperationException si el resultado sería negativo
+                // RestarStock lanza InvalidDomainOperationException si el resultado sería negativo
                 insumo.RestarStock(command.Cantidad);
             }
 

@@ -2,6 +2,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using PastaFlow.Domain.Exceptions;
 
 namespace PastaFlow.API.Middleware;
 
@@ -40,7 +41,15 @@ public sealed class CustomExceptionHandler(ILogger<CustomExceptionHandler> logge
                 Detail = exception.Message
             },
 
-            // Regla de negocio violada (stock insuficiente, tipo inválido, etc.) → 409 Conflict
+            // Invariante de dominio violada (stock insuficiente, etc.) → 409 Conflict
+            InvalidDomainOperationException => new ProblemDetails
+            {
+                Status = StatusCodes.Status409Conflict,
+                Title = "Regla de negocio violada",
+                Detail = exception.Message
+            },
+
+            // Regla de negocio o estado inválido en capa de aplicación → 409 Conflict
             InvalidOperationException => new ProblemDetails
             {
                 Status = StatusCodes.Status409Conflict,

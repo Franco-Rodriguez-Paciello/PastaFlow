@@ -57,7 +57,7 @@ public sealed class RegistrarVentaCommandHandler
             foreach (var item in command.Items)
             {
                 var producto = productos.First(p => p.Id == item.ProductoId);
-                producto.DescontarStock(item.Cantidad);
+                producto.RestarStock(item.Cantidad);
                 detalles.Add(new DetalleVenta(item.ProductoId, item.Cantidad, producto.PrecioVenta));
             }
 

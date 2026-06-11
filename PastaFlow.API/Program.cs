@@ -77,6 +77,8 @@ builder.Services.AddScoped<ICostoProduccionService, CostoProduccionService>();
 // Handlers CQRS
 builder.Services.AddScoped<RegistrarIngredienteCommandHandler>();
 builder.Services.AddScoped<ActualizarCostoIngredienteCommandHandler>();
+builder.Services.AddScoped<ActualizarStockIngredienteCommandHandler>();
+builder.Services.AddScoped<ActualizarUmbralIngredienteCommandHandler>();
 builder.Services.AddScoped<RegistrarAjusteManualCommandHandler>();
 builder.Services.AddScoped<GetIngredientesQueryHandler>();
 builder.Services.AddScoped<GetHistorialAjustesQueryHandler>();

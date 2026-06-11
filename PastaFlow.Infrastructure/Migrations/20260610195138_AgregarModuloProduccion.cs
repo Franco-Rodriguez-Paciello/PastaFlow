@@ -10,13 +10,35 @@ namespace PastaFlow.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.AddColumn<decimal>(
+                name: "CostoTotalReal",
+                table: "HistorialProduccion",
+                type: "numeric(18,4)",
+                precision: 18,
+                scale: 4,
+                nullable: false,
+                defaultValue: 0m);
 
+            migrationBuilder.AddColumn<decimal>(
+                name: "CostoUnitarioReal",
+                table: "HistorialProduccion",
+                type: "numeric(18,4)",
+                precision: 18,
+                scale: 4,
+                nullable: false,
+                defaultValue: 0m);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropColumn(
+                name: "CostoUnitarioReal",
+                table: "HistorialProduccion");
 
+            migrationBuilder.DropColumn(
+                name: "CostoTotalReal",
+                table: "HistorialProduccion");
         }
     }
 }

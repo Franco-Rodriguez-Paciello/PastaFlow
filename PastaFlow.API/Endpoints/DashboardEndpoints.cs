@@ -14,18 +14,8 @@ public static class DashboardEndpoints
             GetDashboardStatsQueryHandler handler,
             CancellationToken ct) =>
         {
-            try
-            {
-                DashboardStatsDto stats = await handler.HandleAsync(new GetDashboardStatsQuery(), ct);
-                return Results.Ok(stats);
-            }
-            catch (Exception ex)
-            {
-                return Results.Problem(
-                    detail: ex.Message,
-                    statusCode: StatusCodes.Status500InternalServerError,
-                    title: "Error al obtener las estadísticas del dashboard");
-            }
+            DashboardStatsDto stats = await handler.HandleAsync(new GetDashboardStatsQuery(), ct);
+            return Results.Ok(stats);
         })
         .WithName("GetDashboardStats")
         .WithSummary("Retorna las métricas agregadas para la pantalla principal")

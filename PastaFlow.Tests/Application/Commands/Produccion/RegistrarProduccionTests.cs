@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using PastaFlow.Application.Commands.Produccion;
 using PastaFlow.Domain.Entities;
+using PastaFlow.Domain.Exceptions;
+using PastaFlow.Domain.Services;
 using PastaFlow.Tests.Infrastructure;
 
 namespace PastaFlow.Tests.Application.Commands.Produccion;
@@ -34,6 +36,7 @@ public sealed class RegistrarProduccionTests : IDisposable
         _context = new TestDbContext(options);
         _handler = new RegistrarProduccionCommandHandler(
             _context,
+            new CostoProduccionService(),
             NullLogger<RegistrarProduccionCommandHandler>.Instance);
     }
 
@@ -123,6 +126,10 @@ public sealed class RegistrarProduccionTests : IDisposable
         var registro = historial.Single();
         registro.ProductoId.Should().Be(producto.Id);
         registro.CantidadProducida.Should().Be(cantidadProducida);
+        registro.CostoTotalReal.Should().Be(20_060m,
+            because: "harina (200×2×50) + huevos (2×2×15) = 20.060");
+        registro.CostoUnitarioReal.Should().Be(10_030m,
+            because: "costo total / cantidad producida = 20.060 / 2");
         registro.FechaDeRegistro.Should().BeCloseTo(DateTime.UtcNow, precision: TimeSpan.FromSeconds(5));
     }
 
@@ -133,8 +140,8 @@ public sealed class RegistrarProduccionTests : IDisposable
     {
         // ── Arrange ──────────────────────────────────────────────────────────
         const decimal cantidadProducida = 2m;
-        const decimal stockInicialHarina = 0m;   // NO tiene harina → debe fallar
-        const decimal stockInicialHuevos = 10m;
+        const decimal stockInicialHarina = 0m;   // insuficiente para cualquier producción
+        const decimal stockInicialHuevos = 0m;   // insuficiente para evitar descuentos parciales según el orden de la receta
 
         await SeedDataAsync(stockHarina: stockInicialHarina, stockHuevos: stockInicialHuevos);
 
@@ -150,15 +157,15 @@ public sealed class RegistrarProduccionTests : IDisposable
         Func<Task> act = () => _handler.HandleAsync(command, ct);
 
         // ── Assert ────────────────────────────────────────────────────────────
-        // Debe lanzar InvalidOperationException con mensaje descriptivo
+        // Debe lanzar InvalidDomainOperationException con mensaje descriptivo
         await act.Should()
-            .ThrowAsync<InvalidOperationException>(
-                because: "el handler debe rechazar la producción cuando falta stock")
+            .ThrowAsync<InvalidDomainOperationException>(
+                because: "la entidad de dominio debe rechazar la producción cuando falta stock")
             .WithMessage("*Stock insuficiente*");
 
         // El stock de ambos insumos NO debe haber sido modificado
         harina.StockActual.Should().Be(stockInicialHarina,
-            because: "la validación previa a la mutación debe evitar cualquier descuento de stock");
+            because: "la transacción debe revertirse y no persistir descuentos parciales de stock");
 
         huevos.StockActual.Should().Be(stockInicialHuevos,
             because: "ningún insumo debe alterarse cuando la producción falla");

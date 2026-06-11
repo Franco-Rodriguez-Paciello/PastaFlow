@@ -17,6 +17,14 @@ public class HistorialProduccionConfiguration : IEntityTypeConfiguration<Histori
             .IsRequired()
             .HasPrecision(18, 4);
 
+        builder.Property(h => h.CostoTotalReal)
+            .IsRequired()
+            .HasPrecision(18, 4);
+
+        builder.Property(h => h.CostoUnitarioReal)
+            .IsRequired()
+            .HasPrecision(18, 4);
+
         builder.Property(h => h.FechaDeRegistro)
             .IsRequired();
 

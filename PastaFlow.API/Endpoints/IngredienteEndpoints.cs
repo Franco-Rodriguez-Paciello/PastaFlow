@@ -1,9 +1,7 @@
 using PastaFlow.Application.Commands.Ingredientes;
 using PastaFlow.Application.DTOs;
-using PastaFlow.Application.Interfaces;
 using PastaFlow.Application.Queries.Ingredientes;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace PastaFlow.API.Endpoints;
 
@@ -69,18 +67,11 @@ public static class IngredienteEndpoints
         group.MapPatch("/{id:int}/stock", async (
             int id,
             [FromBody] ActualizarStockRequest body,
-            IPastaFlowDbContext context,
+            ActualizarStockIngredienteCommandHandler handler,
             CancellationToken ct) =>
         {
-            var ingrediente = await context.Ingredientes
-                .FirstOrDefaultAsync(i => i.Id == id, ct);
-
-            if (ingrediente is null)
-                return Results.NotFound(new { error = $"No se encontró un ingrediente con el ID '{id}'." });
-
-            ingrediente.AjustarStock(body.NuevoStock);
-
-            await context.SaveChangesAsync(ct);
+            var command = new ActualizarStockIngredienteCommand(id, body.NuevoStock);
+            await handler.HandleAsync(command, ct);
             return Results.NoContent();
         })
         .WithName("ActualizarStockIngrediente")
@@ -93,18 +84,11 @@ public static class IngredienteEndpoints
         group.MapPatch("/{id:int}/umbral", async (
             int id,
             [FromBody] ActualizarUmbralRequest body,
-            IPastaFlowDbContext context,
+            ActualizarUmbralIngredienteCommandHandler handler,
             CancellationToken ct) =>
         {
-            var ingrediente = await context.Ingredientes
-                .FirstOrDefaultAsync(i => i.Id == id, ct);
-
-            if (ingrediente is null)
-                return Results.NotFound(new { error = $"No se encontró un ingrediente con el ID '{id}'." });
-
-            ingrediente.SetUmbralCritico(body.NuevoUmbral);
-
-            await context.SaveChangesAsync(ct);
+            var command = new ActualizarUmbralIngredienteCommand(id, body.NuevoUmbral);
+            await handler.HandleAsync(command, ct);
             return Results.NoContent();
         })
         .WithName("ActualizarUmbralIngrediente")

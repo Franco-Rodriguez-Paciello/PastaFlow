@@ -2,19 +2,24 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using PastaFlow.Application.Interfaces;
 using PastaFlow.Domain.Entities;
+using PastaFlow.Domain.Models;
+using PastaFlow.Domain.Services;
 
 namespace PastaFlow.Application.Commands.Produccion;
 
 public sealed class RegistrarProduccionCommandHandler
 {
     private readonly IPastaFlowDbContext _context;
+    private readonly ICostoProduccionService _costoProduccionService;
     private readonly ILogger<RegistrarProduccionCommandHandler> _logger;
 
     public RegistrarProduccionCommandHandler(
         IPastaFlowDbContext context,
+        ICostoProduccionService costoProduccionService,
         ILogger<RegistrarProduccionCommandHandler> logger)
     {
         _context = context;
+        _costoProduccionService = costoProduccionService;
         _logger = logger;
     }
 
@@ -55,7 +60,7 @@ public sealed class RegistrarProduccionCommandHandler
                 .Where(i => idsInsumos.Contains(i.Id))
                 .ToListAsync(cancellationToken);
 
-            // 4. Validar stock suficiente para TODOS los insumos antes de mutar ninguno
+            // 4. Descontar stock de cada insumo; la entidad valida la invariante de stock
             foreach (RecetaIngrediente item in receta)
             {
                 Ingrediente? ingrediente = insumos.FirstOrDefault(i => i.Id == item.IngredienteId);
@@ -65,29 +70,39 @@ public sealed class RegistrarProduccionCommandHandler
                         $"El insumo con Id {item.IngredienteId} referenciado en la receta del producto '{producto.Nombre}' no existe en la base de datos.");
 
                 decimal cantidadADescontar = item.CantidadRequerida * command.CantidadProducida;
-
-                if (ingrediente.StockActual < cantidadADescontar)
-                    throw new InvalidOperationException(
-                        $"Stock insuficiente de '{ingrediente.Nombre}' para realizar la producción. " +
-                        $"Stock disponible: {ingrediente.StockActual}, requerido: {cantidadADescontar}.");
-            }
-
-            // 5. Descontar stock de cada insumo (validación superada, stock garantizado)
-            foreach (RecetaIngrediente item in receta)
-            {
-                Ingrediente ingrediente = insumos.First(i => i.Id == item.IngredienteId);
-                decimal cantidadADescontar = item.CantidadRequerida * command.CantidadProducida;
-                ingrediente.DescontarStock(cantidadADescontar);
+                ingrediente.RestarStock(cantidadADescontar);
             }
 
             // 6. Aumentar el stock del producto terminado
             producto.AumentarStock(command.CantidadProducida);
 
-            // 7. Registrar en el historial de producción
-            var registro = new HistorialProduccion(command.ProductoId, command.CantidadProducida);
+            // 7. Congelar costo financiero al momento de fabricar
+            List<ItemRecetaParaCosto> itemsParaCosto = receta
+                .Select(item =>
+                {
+                    Ingrediente ingrediente = insumos.First(i => i.Id == item.IngredienteId);
+                    return new ItemRecetaParaCosto(
+                        item.IngredienteId,
+                        ingrediente.Nombre,
+                        item.CantidadRequerida,
+                        ingrediente.CostoActual,
+                        ingrediente.StockActual);
+                })
+                .ToList();
+
+            decimal costoTotalReal = _costoProduccionService
+                .CalcularCostoTotal(itemsParaCosto, command.CantidadProducida);
+            decimal costoUnitarioReal = costoTotalReal / command.CantidadProducida;
+
+            // 8. Registrar en el historial de producción
+            var registro = new HistorialProduccion(
+                command.ProductoId,
+                command.CantidadProducida,
+                costoTotalReal,
+                costoUnitarioReal);
             _context.HistorialProduccion.Add(registro);
 
-            // 8. Persistir y confirmar la transacción
+            // 9. Persistir y confirmar la transacción
             await _context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 

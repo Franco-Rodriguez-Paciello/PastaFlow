@@ -38,6 +38,8 @@ public sealed class GetHistorialProduccionQueryHandler
                 h.ProductoId,
                 h.Producto.Nombre,
                 h.CantidadProducida,
+                h.CostoTotalReal,
+                h.CostoUnitarioReal,
                 h.FechaDeRegistro))
             .ToListAsync(cancellationToken);
     }
