@@ -36,9 +36,25 @@ export class ApiError extends Error {
     this.fieldErrors = fieldErrors;
   }
 
-  /** HTTP 409 – optimistic-concurrency conflict (xmin) */
+  /** HTTP 409 – any conflict response */
   get isConflict(): boolean {
     return this.status === 409;
+  }
+
+  /** HTTP 409 – optimistic-concurrency conflict (xmin / RowVersion) */
+  get isConcurrencyConflict(): boolean {
+    return this.status === 409 && this.title === 'Conflicto de concurrencia';
+  }
+
+  /**
+   * HTTP 409 (regla de negocio / operación inválida) o 422 – errores de dominio
+   * distintos del conflicto de concurrencia (p. ej. stock insuficiente).
+   */
+  get isBusinessRuleViolation(): boolean {
+    return (
+      (this.status === 409 && !this.isConcurrencyConflict) ||
+      this.status === 422
+    );
   }
 
   /** HTTP 400 with FluentValidation field-level messages */

@@ -1,11 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using PastaFlow.Domain.Entities;
+using PastaFlow.Application.Interfaces;
 using PastaFlow.Infrastructure.Persistence;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 
 namespace PastaFlow.API.Endpoints;
 
@@ -24,6 +20,7 @@ public static class AuthEndpoints
         group.MapPost("/login", async (
             [FromBody] LoginRequest request,
             PastaFlowDbContext db,
+            IJwtTokenGenerator tokenGenerator,
             IConfiguration configuration,
             CancellationToken ct) =>
         {
@@ -43,7 +40,9 @@ public static class AuthEndpoints
             if (usuario is null || !BCrypt.Net.BCrypt.Verify(request.Password, usuario.PasswordHash))
                 return Results.Unauthorized();
 
-            var (token, expiracion) = GenerarJwtToken(usuario, configuration);
+            var token = tokenGenerator.GenerateToken(usuario);
+            var expirationHours = configuration.GetSection("Jwt").GetValue<int>("ExpirationHours", 8);
+            var expiracion = DateTime.UtcNow.AddHours(expirationHours);
 
             return Results.Ok(new LoginResponse(token, usuario.Username, usuario.Rol, expiracion));
         })
@@ -55,33 +54,5 @@ public static class AuthEndpoints
         .AllowAnonymous();
 
         return app;
-    }
-
-    private static (string token, DateTime expiracion) GenerarJwtToken(Usuario usuario, IConfiguration configuration)
-    {
-        var jwtSection = configuration.GetSection("Jwt");
-        var secretKey = jwtSection["SecretKey"]!;
-        var expirationHours = jwtSection.GetValue<int>("ExpirationHours", 8);
-
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
-        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-        var expiracion = DateTime.UtcNow.AddHours(expirationHours);
-
-        var claims = new[]
-        {
-            new Claim(JwtRegisteredClaimNames.Sub,        usuario.Id.ToString()),
-            new Claim(JwtRegisteredClaimNames.UniqueName, usuario.Username),
-            new Claim(JwtRegisteredClaimNames.Jti,        Guid.NewGuid().ToString()),
-            new Claim(ClaimTypes.Role,                    usuario.Rol)
-        };
-
-        var token = new JwtSecurityToken(
-            issuer:            jwtSection["Issuer"],
-            audience:          jwtSection["Audience"],
-            claims:            claims,
-            expires:           expiracion,
-            signingCredentials: credentials);
-
-        return (new JwtSecurityTokenHandler().WriteToken(token), expiracion);
     }
 }

@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { OrdenProduccionDto, ProductoDto } from '../types/api.types';
+import type { DetalleCostoIngredienteDto, OrdenProduccionDto, ProductoDto } from '../types/api.types';
 import { getProductos } from '../services/productoService';
-import { registrarProduccion, verificarOrdenProduccion } from '../services/produccionService';
+import {
+  getProduccionErrorMessage,
+  isProduccionConcurrencyError,
+  isProduccionDomainError,
+  mirrorProductionStockUpdate,
+  registrarProduccion,
+  verificarOrdenProduccion,
+} from '../services/produccionService';
 import { ApiError } from '../lib/apiError';
 import { useAuth } from '../context/AuthContext';
 
@@ -36,10 +43,12 @@ export default function ProduccionDiariaView() {
 
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [preview, setPreview] = useState<OrdenProduccionDto | null>(null);
+  const [insumosTrasProduccion, setInsumosTrasProduccion] = useState<DetalleCostoIngredienteDto[] | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [domainError, setDomainError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [concurrencyError, setConcurrencyError] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -88,7 +97,9 @@ export default function ProduccionDiariaView() {
 
   function invalidatePreview() {
     setPreview(null);
+    setInsumosTrasProduccion(null);
     setVerifyError(null);
+    setDomainError(null);
   }
 
   function handleChange(e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) {
@@ -96,6 +107,7 @@ export default function ProduccionDiariaView() {
     setForm((prev) => ({ ...prev, [name]: value }));
     invalidatePreview();
     setSubmitError(null);
+    setDomainError(null);
     setConcurrencyError(false);
     if (fieldErrors[name]) {
       setFieldErrors((prev) => { const next = { ...prev }; delete next[name]; return next; });
@@ -125,16 +137,19 @@ export default function ProduccionDiariaView() {
         productoId,
         cantidadProducida: cantidad,
       });
+      setInsumosTrasProduccion(null);
       setPreview(orden);
     } catch (err: unknown) {
       if (err instanceof ApiError) {
         if (err.isValidation) {
           setFieldErrors(err.fieldErrors);
+        } else if (isProduccionDomainError(err)) {
+          setDomainError(getProduccionErrorMessage(err));
         } else {
-          setVerifyError(err.detail ?? err.message);
+          setVerifyError(getProduccionErrorMessage(err));
         }
       } else {
-        setVerifyError(err instanceof Error ? err.message : 'Error al verificar la producción.');
+        setVerifyError(getProduccionErrorMessage(err));
       }
     } finally {
       setVerifying(false);
@@ -144,6 +159,7 @@ export default function ProduccionDiariaView() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitError(null);
+    setDomainError(null);
     setFieldErrors({});
     setConcurrencyError(false);
     setSuccessMessage(null);
@@ -160,10 +176,11 @@ export default function ProduccionDiariaView() {
     }
 
     if (!preview!.stockSuficiente) {
-      setSubmitError('No hay stock suficiente de insumos para registrar esta producción.');
+      setDomainError('No hay stock suficiente de insumos para registrar esta producción.');
       return;
     }
 
+    const ordenConfirmada = preview!;
     setSubmitting(true);
     try {
       await registrarProduccion({ productoId, cantidadProducida: cantidad });
@@ -173,34 +190,32 @@ export default function ProduccionDiariaView() {
         `✓ ${nombre} — ${fmt(cantidad)} unidad${cantidad !== 1 ? 'es' : ''} registrada${cantidad !== 1 ? 's' : ''} con éxito. El stock de insumos fue descontado.`,
       );
 
-      setProductos((prev) =>
-        prev.map((p) =>
-          p.id === productoId
-            ? { ...p, stockActual: p.stockActual + cantidad }
-            : p,
-        ),
-      );
-
-      setForm(INITIAL_FORM);
+      const mirrored = mirrorProductionStockUpdate(productos, ordenConfirmada);
+      setProductos(mirrored.productos);
+      setInsumosTrasProduccion(mirrored.detalleCostos);
       setPreview(null);
+
+      setForm((prev) => ({ ...prev, cantidad: '' }));
       if (successTimerRef.current) clearTimeout(successTimerRef.current);
       successTimerRef.current = setTimeout(() => setSuccessMessage(null), 6000);
     } catch (err: unknown) {
-      if (err instanceof ApiError) {
-        if (err.isConflict) {
-          setConcurrencyError(true);
-          setForm(INITIAL_FORM);
-          setPreview(null);
-          getProductos()
-            .then((prods) => setProductos(prods.filter((p) => p.tipoProducto === 'Compuesto')))
-            .catch(() => { /* silent */ });
-        } else if (err.isValidation) {
-          setFieldErrors(err.fieldErrors);
-        } else {
-          setSubmitError(err.detail ?? err.message);
-        }
+      if (isProduccionConcurrencyError(err)) {
+        setConcurrencyError(true);
+        setForm((prev) => ({ ...prev, cantidad: '' }));
+        setPreview(null);
+        getProductos()
+          .then((prods) => setProductos(prods.filter((p) => p.tipoProducto === 'Compuesto')))
+          .catch(() => { /* silent */ });
+      } else if (err instanceof ApiError && err.isValidation) {
+        setFieldErrors(err.fieldErrors);
+      } else if (isProduccionDomainError(err)) {
+        setDomainError(getProduccionErrorMessage(err));
+        setPreview(null);
+        getProductos()
+          .then((prods) => setProductos(prods.filter((p) => p.tipoProducto === 'Compuesto')))
+          .catch(() => { /* silent */ });
       } else {
-        setSubmitError(err instanceof Error ? err.message : 'Error al registrar la producción.');
+        setSubmitError(getProduccionErrorMessage(err));
       }
     } finally {
       setSubmitting(false);
@@ -212,6 +227,7 @@ export default function ProduccionDiariaView() {
   const inputNumber = inputBase + ' pr-[5.5rem]';
 
   const detalleCostos = previewVigente ? preview!.detalleCostos : [];
+  const insumosActualizados = insumosTrasProduccion;
   const formBusy = submitting || verifying;
 
   return (
@@ -254,6 +270,30 @@ export default function ProduccionDiariaView() {
               type="button"
               onClick={() => setConcurrencyError(false)}
               className="shrink-0 text-amber-500 hover:text-amber-700 transition-colors"
+              aria-label="Cerrar"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        )}
+
+        {domainError && (
+          <div className="mb-5 flex items-start gap-3 rounded-lg border border-orange-300 bg-orange-50 px-4 py-3 text-sm text-orange-900">
+            <span className="mt-0.5 shrink-0 text-orange-500">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </span>
+            <div className="flex-1">
+              <p className="font-semibold">No se pudo completar la operación</p>
+              <p className="mt-0.5">{domainError}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setDomainError(null)}
+              className="shrink-0 text-orange-500 hover:text-orange-700 transition-colors"
               aria-label="Cerrar"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -480,12 +520,12 @@ export default function ProduccionDiariaView() {
                 )}
               </div>
 
-              {!previewVigente ? (
+              {!previewVigente && !insumosActualizados ? (
                 <p className="text-sm text-gray-400 text-center py-4">
                   Verificá la producción para ver el impacto en insumos
                   {isAdmin ? ' y los costos' : ''}.
                 </p>
-              ) : (
+              ) : previewVigente ? (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
@@ -531,6 +571,32 @@ export default function ProduccionDiariaView() {
                           </tr>
                         );
                       })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <p className="mb-3 text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                    Stock de insumos actualizado tras el último registro.
+                  </p>
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-100 text-xs text-gray-400">
+                        <th className="pb-2 text-left font-medium">Insumo</th>
+                        <th className="pb-2 text-right font-medium">Stock actual</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {insumosActualizados!.map((row) => (
+                        <tr key={row.ingredienteId} className="hover:bg-gray-50">
+                          <td className="py-2.5 pr-4 font-medium text-gray-700">
+                            {row.nombreIngrediente}
+                          </td>
+                          <td className={`py-2.5 px-2 text-right ${stockColor(row.stockDisponible, row.stockDisponible)}`}>
+                            {fmt(row.stockDisponible)}
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>

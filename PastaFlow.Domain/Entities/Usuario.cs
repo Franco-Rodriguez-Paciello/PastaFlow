@@ -1,3 +1,5 @@
+using PastaFlow.Domain;
+
 namespace PastaFlow.Domain.Entities;
 
 public class Usuario
@@ -5,12 +7,12 @@ public class Usuario
     public int Id { get; private set; }
     public string Username { get; private set; } = null!;
     public string PasswordHash { get; private set; } = null!;
-    public string Rol { get; private set; } = "Admin";
+    public string Rol { get; private set; } = Roles.Admin;
     public DateTime FechaCreacion { get; private set; }
 
     private Usuario() { }
 
-    public Usuario(string username, string passwordHash, string rol = "Admin")
+    public Usuario(string username, string passwordHash, string rol = Roles.Admin)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(username);
         ArgumentException.ThrowIfNullOrWhiteSpace(passwordHash);

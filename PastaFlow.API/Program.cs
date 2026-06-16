@@ -14,7 +14,9 @@ using PastaFlow.Application.Queries.Dashboard;
 using PastaFlow.Application.Queries.Ingredientes;
 using PastaFlow.Application.Queries.Produccion;
 using PastaFlow.Application.Queries.Productos;
+using PastaFlow.Domain;
 using PastaFlow.Domain.Services;
+using PastaFlow.Infrastructure.Auth;
 using PastaFlow.Infrastructure.Persistence;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -32,9 +34,14 @@ builder.Services.AddExceptionHandler<CustomExceptionHandler>();
 builder.Services.AddProblemDetails();
 
 // JWT Authentication
+// ADVERTENCIA PRODUCCIÓN: nunca depender del SecretKey embebido en appsettings.json.
+// Prioridad: variable de entorno Jwt__SecretKey → User Secrets / IConfiguration → fallback appsettings (solo dev local).
 var jwtSection = builder.Configuration.GetSection("Jwt");
-var secretKey = jwtSection["SecretKey"]
-    ?? throw new InvalidOperationException("JWT SecretKey no está configurado en appsettings.");
+var secretKey =
+    Environment.GetEnvironmentVariable("Jwt__SecretKey")
+    ?? jwtSection["SecretKey"]
+    ?? throw new InvalidOperationException(
+        "JWT SecretKey no está configurado. Definí Jwt__SecretKey como variable de entorno o User Secret.");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -56,11 +63,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization(options =>
 {
-    // Solo el dueño (Admin) puede acceder
-    options.AddPolicy("AdminOnly",       policy => policy.RequireRole("Admin"));
-    // Tanto Admin como Operario pueden acceder
-    options.AddPolicy("AdminOrOperario", policy => policy.RequireRole("Admin", "Operario"));
+    options.AddPolicy("AdminOnly",       policy => policy.RequireRole(Roles.Admin));
+    options.AddPolicy("AdminOrOperario", policy => policy.RequireRole(Roles.Admin, Roles.Operario));
 });
+
+builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 
 // Registra automáticamente todos los validadores del ensamblado Application
 builder.Services.AddValidatorsFromAssemblyContaining<RegistrarProduccionCommandValidator>();
@@ -99,6 +106,12 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<PastaFlowDbContext>();
+        await db.Database.MigrateAsync();
+    }
+
     app.MapOpenApi();
 }
 
