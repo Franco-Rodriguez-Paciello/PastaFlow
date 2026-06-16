@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { AlertCircle, X } from 'lucide-react';
 import type { DetalleCostoIngredienteDto, OrdenProduccionDto, ProductoDto } from '../types/api.types';
 import { getProductos } from '../services/productoService';
 import {
@@ -48,6 +49,7 @@ export default function ProduccionDiariaView() {
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [errorFeedback, setErrorFeedback] = useState<string | null>(null);
   const [domainError, setDomainError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [concurrencyError, setConcurrencyError] = useState(false);
@@ -107,6 +109,7 @@ export default function ProduccionDiariaView() {
     setForm((prev) => ({ ...prev, [name]: value }));
     invalidatePreview();
     setSubmitError(null);
+    setErrorFeedback(null);
     setDomainError(null);
     setConcurrencyError(false);
     if (fieldErrors[name]) {
@@ -159,6 +162,7 @@ export default function ProduccionDiariaView() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitError(null);
+    setErrorFeedback(null);
     setDomainError(null);
     setFieldErrors({});
     setConcurrencyError(false);
@@ -209,7 +213,7 @@ export default function ProduccionDiariaView() {
       } else if (err instanceof ApiError && err.isValidation) {
         setFieldErrors(err.fieldErrors);
       } else if (isProduccionDomainError(err)) {
-        setDomainError(getProduccionErrorMessage(err));
+        setErrorFeedback(getProduccionErrorMessage(err));
         setPreview(null);
         getProductos()
           .then((prods) => setProductos(prods.filter((p) => p.tipoProducto === 'Compuesto')))
@@ -311,6 +315,24 @@ export default function ProduccionDiariaView() {
               </svg>
             </span>
             <span>{verifyError ?? submitError}</span>
+          </div>
+        )}
+
+        {errorFeedback && (
+          <div
+            role="alert"
+            className="mb-5 flex items-start gap-3 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800 shadow-sm"
+          >
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" aria-hidden="true" />
+            <p className="flex-1 leading-relaxed">{errorFeedback}</p>
+            <button
+              type="button"
+              onClick={() => setErrorFeedback(null)}
+              className="shrink-0 rounded-md p-0.5 text-red-400 transition-colors hover:bg-red-100 hover:text-red-600"
+              aria-label="Cerrar alerta"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
         )}
 

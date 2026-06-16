@@ -61,15 +61,25 @@ export class ApiError extends Error {
   get isValidation(): boolean {
     return this.status === 400 && Object.keys(this.fieldErrors).length > 0;
   }
+
+  /** HTTP 403 – authenticated but lacking permission for the action */
+  get isForbidden(): boolean {
+    return this.status === 403;
+  }
+}
+
+/** Thrown when the user is authenticated but lacks permission for the requested action. */
+export class ForbiddenError extends ApiError {
+  constructor(title: string, detail: string | undefined) {
+    super(403, title, detail, {});
+    this.name = 'ForbiddenError';
+  }
 }
 
 /**
- * Reads a non-ok `Response`, parses Problem Details JSON and throws `ApiError`.
- * Call after every `fetch` before consuming the body.
+ * Parses an RFC 7807 Problem Details body from a non-ok `Response`.
  */
-export async function throwIfError(response: Response): Promise<void> {
-  if (response.ok) return;
-
+export async function parseApiError(response: Response): Promise<ApiError> {
   let problem: ProblemDetails = {};
   try {
     problem = (await response.json()) as ProblemDetails;
@@ -85,10 +95,19 @@ export async function throwIfError(response: Response): Promise<void> {
     fieldErrors[camelKey] = msgs;
   }
 
-  throw new ApiError(
+  return new ApiError(
     problem.status ?? response.status,
     problem.title ?? `Error ${response.status}`,
     problem.detail,
     fieldErrors,
   );
+}
+
+/**
+ * Reads a non-ok `Response`, parses Problem Details JSON and throws `ApiError`.
+ * Call after every `fetch` before consuming the body.
+ */
+export async function throwIfError(response: Response): Promise<void> {
+  if (response.ok) return;
+  throw await parseApiError(response);
 }

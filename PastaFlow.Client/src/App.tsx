@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { ShieldAlert } from 'lucide-react';
 import DashboardView from './components/DashboardView';
 import IngredientesView from './components/IngredientesView';
 import LoginView from './components/LoginView';
@@ -35,12 +36,49 @@ function AccessDenied({ onRedirect }: { onRedirect: () => void }) {
   );
 }
 
+function ForbiddenToast({ visible }: { visible: boolean }) {
+  if (!visible) return null;
+
+  return (
+    <div
+      role="alert"
+      aria-live="assertive"
+      className="fixed top-4 right-4 z-50 flex max-w-sm items-start gap-3 rounded-xl border border-amber-400/40 bg-gray-900 px-4 py-3.5 text-sm text-amber-50 shadow-lg"
+    >
+      <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" aria-hidden="true" />
+      <p className="leading-relaxed">
+        Acceso denegado. No tienes los permisos requeridos para realizar esta acción.
+      </p>
+    </div>
+  );
+}
+
 function App() {
   const { isAuthenticated, user } = useAuth();
   const isAdmin = user?.rol === 'Admin';
 
+  const [forbiddenToastVisible, setForbiddenToastVisible] = useState(false);
+  const forbiddenToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Operario arranca en producción; Admin en dashboard
   const [view, setView] = useState<string>(() => (isAdmin ? 'dashboard' : 'produccion'));
+
+  useEffect(() => {
+    const showForbiddenToast = () => {
+      setForbiddenToastVisible(true);
+      if (forbiddenToastTimerRef.current) clearTimeout(forbiddenToastTimerRef.current);
+      forbiddenToastTimerRef.current = setTimeout(() => {
+        setForbiddenToastVisible(false);
+        forbiddenToastTimerRef.current = null;
+      }, 4000);
+    };
+
+    window.addEventListener('api:forbidden', showForbiddenToast);
+    return () => {
+      window.removeEventListener('api:forbidden', showForbiddenToast);
+      if (forbiddenToastTimerRef.current) clearTimeout(forbiddenToastTimerRef.current);
+    };
+  }, []);
 
   // Si el rol cambia (re-login con otro usuario), resetear la vista
   useEffect(() => {
@@ -50,13 +88,22 @@ function App() {
   }, [isAdmin, view]);
 
   // Route guard: show Login if not authenticated
-  if (!isAuthenticated) return <LoginView />;
+  if (!isAuthenticated) {
+    return (
+      <>
+        <ForbiddenToast visible={forbiddenToastVisible} />
+        <LoginView />
+      </>
+    );
+  }
 
   // Guardián de vista: Operario intentó llegar a una vista Admin
   const viewBlocked = !isAdmin && ADMIN_ONLY_VIEWS.has(view);
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <>
+      <ForbiddenToast visible={forbiddenToastVisible} />
+      <div className="flex min-h-screen bg-gray-50">
       {/* Barra Lateral Fija */}
       <SideBar currentView={view} onViewChange={setView} />
 
@@ -117,7 +164,8 @@ function App() {
           </>
         )}
       </main>
-    </div>
+      </div>
+    </>
   );
 }
 
