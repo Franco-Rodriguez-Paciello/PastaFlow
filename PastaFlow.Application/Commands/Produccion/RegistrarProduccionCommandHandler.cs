@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using PastaFlow.Application.Interfaces;
 using PastaFlow.Domain.Entities;
+using PastaFlow.Domain.Exceptions;
 using PastaFlow.Domain.Models;
 using PastaFlow.Domain.Services;
 
@@ -61,20 +62,32 @@ public sealed class RegistrarProduccionCommandHandler
                 .ToListAsync(cancellationToken);
 
             // 4. Descontar stock de cada insumo; la entidad valida la invariante de stock
-            foreach (RecetaIngrediente item in receta)
+            try
             {
-                Ingrediente? ingrediente = insumos.FirstOrDefault(i => i.Id == item.IngredienteId);
+                foreach (RecetaIngrediente item in receta)
+                {
+                    Ingrediente? ingrediente = insumos.FirstOrDefault(i => i.Id == item.IngredienteId);
 
-                if (ingrediente is null)
-                    throw new InvalidOperationException(
-                        $"El insumo con Id {item.IngredienteId} referenciado en la receta del producto '{producto.Nombre}' no existe en la base de datos.");
+                    if (ingrediente is null)
+                        throw new InvalidOperationException(
+                            $"El insumo con Id {item.IngredienteId} referenciado en la receta del producto '{producto.Nombre}' no existe en la base de datos.");
 
-                decimal cantidadADescontar = item.CantidadRequerida * command.CantidadProducida;
-                ingrediente.RestarStock(cantidadADescontar);
+                    decimal cantidadADescontar = item.CantidadRequerida * command.CantidadProducida;
+                    ingrediente.RestarStock(cantidadADescontar);
+                }
+
+                // 6. Aumentar el stock del producto terminado
+                producto.AumentarStock(command.CantidadProducida);
             }
-
-            // 6. Aumentar el stock del producto terminado
-            producto.AumentarStock(command.CantidadProducida);
+            catch (InvalidDomainOperationException ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Intento de producción fallido por stock insuficiente. ProductoId: {ProductoId}, Detalle: {ErrorMessage}",
+                    command.ProductoId,
+                    ex.Message);
+                throw;
+            }
 
             // 7. Congelar costo financiero al momento de fabricar
             List<ItemRecetaParaCosto> itemsParaCosto = receta
@@ -107,9 +120,10 @@ public sealed class RegistrarProduccionCommandHandler
             await transaction.CommitAsync(cancellationToken);
 
             _logger.LogInformation(
-                "Producción registrada correctamente. Producto: '{Nombre}' (Id {ProductoId}), " +
-                "Cantidad producida: {Cantidad}. HistorialProduccionId: {RegistroId}.",
-                producto.Nombre, command.ProductoId, command.CantidadProducida, registro.Id);
+                "Producción registrada exitosamente. ProductoId: {ProductoId}, Cantidad: {Cantidad}, CostoTotal: {CostoTotalReal}",
+                command.ProductoId,
+                command.CantidadProducida,
+                costoTotalReal);
 
             return registro.Id;
         }
