@@ -23,7 +23,9 @@ public sealed record ComprasInsightContextDto(
     IReadOnlyCollection<MermaRecienteContextDto> MermasRecientes,
     IReadOnlyCollection<VariacionPrecioContextDto> VariacionesPrecio,
     IReadOnlyCollection<ProductoDemandaFinDeSemanaDto> DemandaProyectadaFinDeSemana,
-    IReadOnlyCollection<ReposicionSugeridaContextDto> ReposicionesSugeridas);
+    IReadOnlyCollection<ReposicionSugeridaContextDto> ReposicionesSugeridas,
+    IReadOnlyCollection<PanoramaInsumoFinDeSemanaDto> PanoramaFinDeSemana,
+    IReadOnlyCollection<ProveedorInsumoContextDto> ProveedoresPorInsumo);
 
 public sealed record InsumoCriticoContextDto(
     string Nombre,
@@ -56,4 +58,31 @@ public sealed record ReposicionSugeridaContextDto(
     decimal ConsumoProyectadoFinDeSemana,
     decimal CantidadSugerida,
     string UnidadMedida,
-    string Motivo);
+    string Motivo,
+    ProveedorSugeridoContextDto? ProveedorSugerido);
+
+public sealed record ProveedorSugeridoContextDto(
+    string NombreProveedor,
+    decimal PrecioReferencia,
+    string? CodigoProveedor,
+    int? TiempoEntregaDias,
+    string? TelefonoProveedor);
+
+public sealed record ProveedorInsumoContextDto(
+    string NombreInsumo,
+    string NombreProveedor,
+    bool EsPreferido,
+    decimal PrecioReferencia,
+    string UnidadMedida,
+    string? CodigoProveedor,
+    int? TiempoEntregaDias,
+    string? TelefonoProveedor);
+
+public sealed record PanoramaInsumoFinDeSemanaDto(
+    string NombreInsumo,
+    decimal StockActual,
+    decimal ConsumoProyectado,
+    decimal MargenEstimado,
+    string UnidadMedida,
+    string Estado,
+    ProveedorSugeridoContextDto? ProveedorPreferido);

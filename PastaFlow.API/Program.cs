@@ -10,6 +10,7 @@ using PastaFlow.Application.Commands.Dashboard;
 using PastaFlow.Application.Commands.Ingredientes;
 using PastaFlow.Application.Commands.Produccion;
 using PastaFlow.Application.Commands.Productos;
+using PastaFlow.Application.Commands.Proveedores;
 using PastaFlow.Application.Commands.Ventas;
 using PastaFlow.Application.Interfaces;
 using PastaFlow.Application.Options;
@@ -19,11 +20,13 @@ using PastaFlow.Infrastructure.Ai;
 using PastaFlow.Application.Queries.Ingredientes;
 using PastaFlow.Application.Queries.Produccion;
 using PastaFlow.Application.Queries.Productos;
+using PastaFlow.Application.Queries.Proveedores;
 using PastaFlow.Domain;
 using PastaFlow.Domain.Services;
 using PastaFlow.Infrastructure.Auth;
 using PastaFlow.Infrastructure.Jobs;
 using PastaFlow.Infrastructure.Persistence;
+using PastaFlow.Infrastructure.Persistence.Seeding;
 using System.Text;
 using System.Text.Json.Serialization;
 
@@ -126,6 +129,11 @@ try
     builder.Services.AddScoped<GetUltimoComprasInsightQueryHandler>();
     builder.Services.AddScoped<GetHistorialComprasInsightsQueryHandler>();
     builder.Services.AddScoped<GetComprasInsightByIdQueryHandler>();
+    builder.Services.AddScoped<RegistrarProveedorCommandHandler>();
+    builder.Services.AddScoped<ActualizarProveedorCommandHandler>();
+    builder.Services.AddScoped<VincularIngredienteProveedorCommandHandler>();
+    builder.Services.AddScoped<DesvincularIngredienteProveedorCommandHandler>();
+    builder.Services.AddScoped<GetProveedoresQueryHandler>();
     builder.Services.AddScoped<RegistrarVentaCommandHandler>();
 
     var app = builder.Build();
@@ -136,6 +144,7 @@ try
         {
             var db = scope.ServiceProvider.GetRequiredService<PastaFlowDbContext>();
             await db.Database.MigrateAsync();
+            await ProveedorDataSeeder.SeedAsync(db);
         }
 
         app.MapOpenApi();
@@ -149,6 +158,7 @@ try
 
     app.MapAuthEndpoints();
     app.MapIngredienteEndpoints();
+    app.MapProveedorEndpoints();
     app.MapProductoEndpoints();
     app.MapProduccionEndpoints();
     app.MapVentasEndpoints();

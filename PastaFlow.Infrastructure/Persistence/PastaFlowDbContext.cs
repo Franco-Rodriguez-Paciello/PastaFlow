@@ -19,6 +19,8 @@ public class PastaFlowDbContext : DbContext, IPastaFlowDbContext
     public DbSet<Venta> Ventas => Set<Venta>();
     public DbSet<DetalleVenta> DetallesVenta => Set<DetalleVenta>();
     public DbSet<InformeComprasInsight> InformesComprasInsight => Set<InformeComprasInsight>();
+    public DbSet<Proveedor> Proveedores => Set<Proveedor>();
+    public DbSet<ProveedorIngrediente> ProveedorIngredientes => Set<ProveedorIngrediente>();
 
     public Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
         => Database.BeginTransactionAsync(cancellationToken);

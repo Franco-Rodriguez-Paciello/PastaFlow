@@ -87,9 +87,25 @@ public sealed class ComprasInsightContextBuilder(
 
         var consumoPorInsumo = await CalcularConsumoProyectadoAsync(demandaFinDeSemana, cancellationToken);
 
-        var reposiciones = await CalcularReposicionesSugeridasAsync(
+        var reposicionesBase = await CalcularReposicionesSugeridasAsync(
             consumoPorInsumo,
             cancellationToken);
+
+        (IReadOnlyCollection<ProveedorInsumoContextDto> proveedoresPorInsumo,
+            IReadOnlyDictionary<string, ProveedorSugeridoContextDto> sugeridosPorInsumo) =
+            await CargarProveedoresAsync(cancellationToken);
+
+        var panoramaFinDeSemana = await CalcularPanoramaFinDeSemanaAsync(
+            consumoPorInsumo,
+            sugeridosPorInsumo,
+            cancellationToken);
+
+        var reposiciones = reposicionesBase
+            .Select(r => r with
+            {
+                ProveedorSugerido = sugeridosPorInsumo.GetValueOrDefault(r.NombreInsumo)
+            })
+            .ToList();
 
         return new ComprasInsightContextDto(
             consultaUtc,
@@ -100,7 +116,9 @@ public sealed class ComprasInsightContextBuilder(
             mermasRecientes,
             variacionesPorInsumo,
             demandaFinDeSemana,
-            reposiciones);
+            reposiciones,
+            panoramaFinDeSemana,
+            proveedoresPorInsumo);
     }
 
     private async Task<IReadOnlyCollection<ProductoDemandaFinDeSemanaDto>> CalcularDemandaFinDeSemanaAsync(
@@ -224,7 +242,8 @@ public sealed class ComprasInsightContextBuilder(
                 consumoProyectado,
                 Math.Round(cantidadSugerida, 2),
                 insumo.UnidadMedida.ToString(),
-                motivo));
+                motivo,
+                null));
         }
 
         return sugerencias
@@ -232,6 +251,100 @@ public sealed class ComprasInsightContextBuilder(
             .ThenBy(s => s.StockActual)
             .Take(15)
             .ToList();
+    }
+
+    private async Task<IReadOnlyCollection<PanoramaInsumoFinDeSemanaDto>> CalcularPanoramaFinDeSemanaAsync(
+        Dictionary<int, decimal> consumoPorInsumo,
+        IReadOnlyDictionary<string, ProveedorSugeridoContextDto> sugeridosPorInsumo,
+        CancellationToken cancellationToken)
+    {
+        if (consumoPorInsumo.Count == 0)
+            return [];
+
+        var ingredientes = await context.Ingredientes
+            .AsNoTracking()
+            .Where(i => consumoPorInsumo.Keys.Contains(i.Id))
+            .ToListAsync(cancellationToken);
+
+        return ingredientes
+            .Select(insumo =>
+            {
+                decimal consumo = Math.Round(consumoPorInsumo.GetValueOrDefault(insumo.Id), 2);
+                decimal margen = Math.Round(insumo.StockActual - consumo, 2);
+                string estado = insumo.StockActual <= insumo.UmbralCritico
+                    ? "Critico"
+                    : margen < insumo.UmbralCritico
+                        ? "Ajustado"
+                        : "Suficiente";
+
+                sugeridosPorInsumo.TryGetValue(insumo.Nombre, out ProveedorSugeridoContextDto? proveedor);
+
+                return new PanoramaInsumoFinDeSemanaDto(
+                    insumo.Nombre,
+                    insumo.StockActual,
+                    consumo,
+                    margen,
+                    insumo.UnidadMedida.ToString(),
+                    estado,
+                    proveedor);
+            })
+            .OrderByDescending(p => p.Estado == "Critico")
+            .ThenByDescending(p => p.Estado == "Ajustado")
+            .ThenBy(p => p.MargenEstimado)
+            .Take(15)
+            .ToList();
+    }
+
+    private async Task<(
+        IReadOnlyCollection<ProveedorInsumoContextDto> Proveedores,
+        IReadOnlyDictionary<string, ProveedorSugeridoContextDto> SugeridosPorInsumo)> CargarProveedoresAsync(
+        CancellationToken cancellationToken)
+    {
+        var proveedoresPorInsumo = await context.ProveedorIngredientes
+            .AsNoTracking()
+            .Where(pi => pi.Proveedor.Activo)
+            .OrderBy(pi => pi.Ingrediente.Nombre)
+            .ThenByDescending(pi => pi.EsPreferido)
+            .ThenBy(pi => pi.PrecioReferencia)
+            .Select(pi => new ProveedorInsumoContextDto(
+                pi.Ingrediente.Nombre,
+                pi.Proveedor.Nombre,
+                pi.EsPreferido,
+                pi.PrecioReferencia,
+                pi.Ingrediente.UnidadMedida.ToString(),
+                pi.CodigoProveedor,
+                pi.TiempoEntregaDias,
+                pi.Proveedor.Telefono))
+            .ToListAsync(cancellationToken);
+
+        if (proveedoresPorInsumo.Count == 0)
+            return ([], new Dictionary<string, ProveedorSugeridoContextDto>(StringComparer.OrdinalIgnoreCase));
+
+        var sugeridos = proveedoresPorInsumo
+            .GroupBy(p => p.NombreInsumo, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                g => g.Key,
+                g => SeleccionarProveedorSugerido(g),
+                StringComparer.OrdinalIgnoreCase);
+
+        return (proveedoresPorInsumo, sugeridos);
+    }
+
+    private static ProveedorSugeridoContextDto SeleccionarProveedorSugerido(
+        IEnumerable<ProveedorInsumoContextDto> opciones)
+    {
+        ProveedorInsumoContextDto elegido = opciones
+            .OrderByDescending(o => o.EsPreferido)
+            .ThenBy(o => o.TiempoEntregaDias ?? int.MaxValue)
+            .ThenBy(o => o.PrecioReferencia)
+            .First();
+
+        return new ProveedorSugeridoContextDto(
+            elegido.NombreProveedor,
+            elegido.PrecioReferencia,
+            elegido.CodigoProveedor,
+            elegido.TiempoEntregaDias,
+            elegido.TelefonoProveedor);
     }
 
     private static DateOnly ResolveDiaOperativo(DateTime consultaLocal, TimeSpan horaInicioDia)

@@ -177,3 +177,25 @@ export interface ComprasInsightDto {
   origen: 'Automatico' | 'Manual';
   diaOperativo: string;
 }
+
+export interface ProveedorIngredienteDto {
+  ingredienteId: number;
+  ingredienteNombre: string;
+  unidadMedida: string;
+  codigoProveedor: string | null;
+  precioReferencia: number;
+  esPreferido: boolean;
+  tiempoEntregaDias: number | null;
+}
+
+export interface ProveedorDto {
+  id: number;
+  nombre: string;
+  contactoNombre: string | null;
+  telefono: string | null;
+  email: string | null;
+  cuit: string | null;
+  notas: string | null;
+  activo: boolean;
+  ingredientes: ProveedorIngredienteDto[];
+}
