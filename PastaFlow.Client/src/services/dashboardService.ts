@@ -20,6 +20,15 @@ export async function getFinancialDashboard(): Promise<FinancialDashboardDto> {
   return response.json() as Promise<FinancialDashboardDto>;
 }
 
+export async function getUltimoComprasInsight(): Promise<ComprasInsightDto | null> {
+  const response = await apiFetch('/api/dashboard/insights/compras');
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    throw await parseApiError(response);
+  }
+  return response.json() as Promise<ComprasInsightDto>;
+}
+
 export async function generateComprasInsight(): Promise<ComprasInsightDto> {
   const response = await apiFetch('/api/dashboard/insights/compras', { method: 'POST' });
   if (!response.ok) {

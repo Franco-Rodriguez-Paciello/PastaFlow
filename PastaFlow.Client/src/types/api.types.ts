@@ -163,6 +163,9 @@ export interface FinancialDashboardDto {
 }
 
 export interface ComprasInsightDto {
+  id: number;
   reporte: string;
   generadoEnUtc: string;
+  origen: 'Automatico' | 'Manual';
+  diaOperativo: string;
 }

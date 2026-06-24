@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { DashboardStatsDto, FinancialDashboardDto, ComprasInsightDto } from '../types/api.types';
-import { getDashboardStats, getFinancialDashboard, generateComprasInsight } from '../services/dashboardService';
+import { getDashboardStats, getFinancialDashboard, getUltimoComprasInsight, generateComprasInsight } from '../services/dashboardService';
 import { ApiError } from '../lib/apiError';
 
 interface DashboardStore {
@@ -13,12 +13,14 @@ interface DashboardStore {
   financialError: string | null;
 
   insight: ComprasInsightDto | null;
+  insightFetching: boolean;
   insightLoading: boolean;
   insightError: string | null;
 
   init: () => Promise<void>;
   fetchStats: () => Promise<void>;
   fetchFinancial: () => Promise<void>;
+  fetchUltimoInsight: () => Promise<void>;
   generateInsight: () => Promise<void>;
   dismissInsightError: () => void;
 }
@@ -33,6 +35,7 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
   financialError: null,
 
   insight: null,
+  insightFetching: false,
   insightLoading: false,
   insightError: null,
 
@@ -40,6 +43,7 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
     await Promise.all([
       useDashboardStore.getState().fetchStats(),
       useDashboardStore.getState().fetchFinancial(),
+      useDashboardStore.getState().fetchUltimoInsight(),
     ]);
   },
 
@@ -68,6 +72,20 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
       });
     } finally {
       set({ financialLoading: false });
+    }
+  },
+
+  fetchUltimoInsight: async () => {
+    set({ insightFetching: true, insightError: null });
+    try {
+      const data = await getUltimoComprasInsight();
+      set({ insight: data });
+    } catch (err) {
+      set({
+        insightError: err instanceof Error ? err.message : 'Error al cargar el último insight.',
+      });
+    } finally {
+      set({ insightFetching: false });
     }
   },
 

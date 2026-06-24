@@ -37,21 +37,44 @@ public sealed class GeminiCompletionService(
             ],
             new GeminiSystemInstruction([new GeminiPart(systemPrompt)]));
 
-        using HttpResponseMessage response = await httpClient.PostAsJsonAsync(
-            path,
-            requestBody,
-            cancellationToken);
-
-        if (!response.IsSuccessStatusCode)
+        for (int attempt = 1; attempt <= LlmHttpRetry.MaxAttemptsCount; attempt++)
         {
+            using HttpResponseMessage response = await httpClient.PostAsJsonAsync(
+                path,
+                requestBody,
+                cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await ParseSuccessResponseAsync(response, cancellationToken);
+            }
+
+            int statusCode = (int)response.StatusCode;
             string errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
-            string message = (int)response.StatusCode == 429
+
+            if (attempt < LlmHttpRetry.MaxAttemptsCount && LlmHttpRetry.IsTransient(statusCode))
+            {
+                TimeSpan delay = LlmHttpRetry.GetDelayBeforeAttempt(attempt);
+                await Task.Delay(delay, cancellationToken);
+                continue;
+            }
+
+            string message = statusCode == 429
                 ? "Gemini rechazó la solicitud por límite de cuota o créditos agotados. " +
                   "Revisá tu plan en https://aistudio.google.com o cambiá Llm:Provider a \"Groq\" en appsettings."
-                : $"Gemini respondió con error {(int)response.StatusCode}: {Truncate(errorBody, 300)}";
+                : statusCode == 503
+                    ? "Gemini no está disponible temporalmente (alta demanda). El job automático reintentará en el próximo minuto."
+                    : $"Gemini respondió con error {statusCode}: {Truncate(errorBody, 300)}";
             throw new InvalidOperationException(message);
         }
 
+        throw new InvalidOperationException("Gemini no respondió tras varios reintentos.");
+    }
+
+    private static async Task<string> ParseSuccessResponseAsync(
+        HttpResponseMessage response,
+        CancellationToken cancellationToken)
+    {
         GeminiGenerateContentResponse? result = await response.Content
             .ReadFromJsonAsync<GeminiGenerateContentResponse>(cancellationToken);
 

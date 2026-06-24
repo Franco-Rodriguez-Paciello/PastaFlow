@@ -2,15 +2,17 @@ using System.Text.Json;
 using PastaFlow.Application.DTOs;
 using PastaFlow.Application.Interfaces;
 using PastaFlow.Application.Services;
+using PastaFlow.Domain.Entities;
 
-namespace PastaFlow.Application.Queries.Dashboard;
+namespace PastaFlow.Application.Commands.Dashboard;
 
 /// <summary>
-/// Orquesta la generación del insight: contexto determinístico → JSON → narrativa con LLM.
+/// Genera el insight con IA y lo persiste en BD (manual o automático).
 /// </summary>
-public sealed class GenerateComprasInsightQueryHandler(
+public sealed class GenerateComprasInsightCommandHandler(
     IComprasInsightContextBuilder contextBuilder,
-    ILlmCompletionService llmCompletionService)
+    ILlmCompletionService llmCompletionService,
+    IPastaFlowDbContext context)
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -19,7 +21,7 @@ public sealed class GenerateComprasInsightQueryHandler(
     };
 
     public async Task<ComprasInsightDto> HandleAsync(
-        GenerateComprasInsightQuery query,
+        GenerateComprasInsightCommand command,
         CancellationToken cancellationToken = default)
     {
         ComprasInsightContextDto contexto = await contextBuilder.BuildAsync(cancellationToken);
@@ -30,6 +32,19 @@ public sealed class GenerateComprasInsightQueryHandler(
             ComprasInsightPrompts.BuildUserPrompt(contextJson),
             cancellationToken);
 
-        return new ComprasInsightDto(reporte.Trim(), DateTime.UtcNow);
+        var informe = new InformeComprasInsight(
+            reporte.Trim(),
+            command.Origen,
+            contexto.DiaOperativo);
+
+        context.InformesComprasInsight.Add(informe);
+        await context.SaveChangesAsync(cancellationToken);
+
+        return new ComprasInsightDto(
+            informe.Id,
+            informe.Reporte,
+            informe.GeneradoEnUtc,
+            informe.Origen.ToString(),
+            informe.DiaOperativo);
     }
 }

@@ -1,8 +1,11 @@
 namespace PastaFlow.Application.DTOs;
 
 public sealed record ComprasInsightDto(
+    int Id,
     string Reporte,
-    DateTime GeneradoEnUtc);
+    DateTime GeneradoEnUtc,
+    string Origen,
+    string DiaOperativo);
 
 public sealed record ComprasInsightContextDto(
     DateTime ConsultaUtc,

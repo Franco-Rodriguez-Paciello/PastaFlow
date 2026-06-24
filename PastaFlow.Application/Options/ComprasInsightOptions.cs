@@ -19,4 +19,10 @@ public sealed class ComprasInsightOptions
 
     /// <summary>Cantidad de fines de semana históricos usados para proyectar demanda.</summary>
     public int FinesDeSemanaHistorial { get; init; } = 4;
+
+    /// <summary>Minutos antes de HoraInicioDia en que corre el job automático. Default: 30 (06:30 si inicio 07:00).</summary>
+    public int MinutosAntesDelInicioOperativo { get; init; } = 30;
+
+    /// <summary>Habilita la generación automática diaria en segundo plano.</summary>
+    public bool JobNocturnoHabilitado { get; init; } = true;
 }

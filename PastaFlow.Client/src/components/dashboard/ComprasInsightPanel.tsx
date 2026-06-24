@@ -5,6 +5,7 @@ import InsightReportView from './InsightReportView';
 export default function ComprasInsightPanel() {
   const {
     insight,
+    insightFetching,
     insightLoading,
     insightError,
     generateInsight,
@@ -26,7 +27,7 @@ export default function ComprasInsightPanel() {
               </span>
             </div>
             <p className="text-xs text-gray-400 mt-1 max-w-md">
-              Recomendaciones sobre stock crítico, mermas y demanda proyectada para el fin de semana.
+              Se genera automáticamente antes del inicio del día operativo. También podés regenerarlo on-demand.
             </p>
           </div>
         </div>
@@ -70,14 +71,21 @@ export default function ComprasInsightPanel() {
         </div>
       )}
 
-      {!insight && !insightLoading && !insightError && (
+      {insightFetching && !insight && (
+        <div className="rounded-xl border border-amber-100 bg-amber-50/30 p-8 flex items-center justify-center gap-2 text-sm text-gray-400">
+          <Loader2 size={16} className="animate-spin text-amber-500" />
+          Cargando último informe…
+        </div>
+      )}
+
+      {!insight && !insightLoading && !insightFetching && !insightError && (
         <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border border-dashed border-amber-200/80 bg-gradient-to-b from-amber-50/40 to-white">
           <span className="bg-white p-3 rounded-full shadow-sm border border-amber-100 mb-4">
             <Sparkles size={26} className="text-amber-400" strokeWidth={1.5} />
           </span>
           <p className="text-sm font-semibold text-gray-700">Sin informe generado</p>
           <p className="text-xs text-gray-400 mt-1.5 max-w-sm leading-relaxed">
-            Generá un análisis con los datos actuales de insumos, precios y ventas históricas de la fábrica.
+            El informe del día se genera solo antes de las 07:00, o podés crear uno ahora con el botón de arriba.
           </p>
         </div>
       )}
@@ -106,6 +114,8 @@ export default function ComprasInsightPanel() {
         <InsightReportView
           reporte={insight.reporte}
           generadoEnUtc={insight.generadoEnUtc}
+          origen={insight.origen}
+          diaOperativo={insight.diaOperativo}
         />
       )}
     </div>

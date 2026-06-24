@@ -4,6 +4,12 @@ import { timeAgo } from '../../stores/useDashboardStore';
 interface InsightReportViewProps {
   reporte: string;
   generadoEnUtc: string;
+  origen: 'Automatico' | 'Manual';
+  diaOperativo: string;
+}
+
+function origenLabel(origen: InsightReportViewProps['origen']): string {
+  return origen === 'Automatico' ? 'Generado automáticamente' : 'Generado manualmente';
 }
 
 function parseParagraphs(text: string): string[] {
@@ -13,7 +19,7 @@ function parseParagraphs(text: string): string[] {
     .filter(Boolean);
 }
 
-export default function InsightReportView({ reporte, generadoEnUtc }: InsightReportViewProps) {
+export default function InsightReportView({ reporte, generadoEnUtc, origen, diaOperativo }: InsightReportViewProps) {
   const paragraphs = parseParagraphs(reporte);
 
   return (
@@ -31,7 +37,10 @@ export default function InsightReportView({ reporte, generadoEnUtc }: InsightRep
             </span>
           </div>
           <span className="text-xs font-medium text-amber-700/70 bg-amber-100/60 px-2.5 py-1 rounded-full">
-            IA · Compras
+            {origenLabel(origen)}
+          </span>
+          <span className="text-xs font-medium text-gray-500 bg-white/60 px-2.5 py-1 rounded-full border border-gray-100">
+            Día operativo {diaOperativo}
           </span>
           <span className="sm:ml-auto text-xs text-gray-500 bg-white/70 px-2.5 py-1 rounded-full border border-amber-100">
             {timeAgo(generadoEnUtc)}

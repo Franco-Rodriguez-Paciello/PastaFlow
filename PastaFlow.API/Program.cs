@@ -6,6 +6,7 @@ using Serilog;
 using System.Security.Claims;
 using PastaFlow.API.Endpoints;
 using PastaFlow.API.Middleware;
+using PastaFlow.Application.Commands.Dashboard;
 using PastaFlow.Application.Commands.Ingredientes;
 using PastaFlow.Application.Commands.Produccion;
 using PastaFlow.Application.Commands.Productos;
@@ -21,6 +22,7 @@ using PastaFlow.Application.Queries.Productos;
 using PastaFlow.Domain;
 using PastaFlow.Domain.Services;
 using PastaFlow.Infrastructure.Auth;
+using PastaFlow.Infrastructure.Jobs;
 using PastaFlow.Infrastructure.Persistence;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -87,6 +89,7 @@ try
         builder.Configuration.GetSection(ComprasInsightOptions.SectionName));
     builder.Services.AddLlmCompletionService(builder.Configuration);
     builder.Services.AddScoped<IComprasInsightContextBuilder, ComprasInsightContextBuilder>();
+    builder.Services.AddHostedService<ComprasInsightScheduledService>();
 
     // Registra automáticamente todos los validadores del ensamblado Application
     builder.Services.AddValidatorsFromAssemblyContaining<RegistrarProduccionCommandValidator>();
@@ -119,7 +122,8 @@ try
     builder.Services.AddScoped<GetHistorialProduccionQueryHandler>();
     builder.Services.AddScoped<GetDashboardStatsQueryHandler>();
     builder.Services.AddScoped<GetFinancialDashboardQueryHandler>();
-    builder.Services.AddScoped<GenerateComprasInsightQueryHandler>();
+    builder.Services.AddScoped<GenerateComprasInsightCommandHandler>();
+    builder.Services.AddScoped<GetUltimoComprasInsightQueryHandler>();
     builder.Services.AddScoped<RegistrarVentaCommandHandler>();
 
     var app = builder.Build();

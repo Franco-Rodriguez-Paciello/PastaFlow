@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+using PastaFlow.Application.Commands.Dashboard;
 using PastaFlow.Application.DTOs;
 using PastaFlow.Application.Queries.Dashboard;
+using PastaFlow.Domain.Entities;
 
 namespace PastaFlow.API.Endpoints;
 
@@ -34,15 +36,30 @@ public static class DashboardEndpoints
         .Produces<FinancialDashboardDto>(StatusCodes.Status200OK)
         .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
 
-        group.MapPost("/insights/compras", async (
-            GenerateComprasInsightQueryHandler handler,
+        group.MapGet("/insights/compras", async (
+            GetUltimoComprasInsightQueryHandler handler,
             CancellationToken ct) =>
         {
-            ComprasInsightDto insight = await handler.HandleAsync(new GenerateComprasInsightQuery(), ct);
+            ComprasInsightDto? insight = await handler.HandleAsync(new GetUltimoComprasInsightQuery(), ct);
+            return insight is null ? Results.NotFound() : Results.Ok(insight);
+        })
+        .WithName("GetUltimoComprasInsight")
+        .WithSummary("Retorna el último informe de compras persistido (sin llamar a la IA)")
+        .Produces<ComprasInsightDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound)
+        .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
+
+        group.MapPost("/insights/compras", async (
+            GenerateComprasInsightCommandHandler handler,
+            CancellationToken ct) =>
+        {
+            ComprasInsightDto insight = await handler.HandleAsync(
+                new GenerateComprasInsightCommand(OrigenInformeCompras.Manual),
+                ct);
             return Results.Ok(insight);
         })
         .WithName("GenerateComprasInsight")
-        .WithSummary("Genera un informe de compras y alertas de stock asistido por IA (on-demand)")
+        .WithSummary("Genera un informe de compras asistido por IA y lo persiste (on-demand)")
         .Produces<ComprasInsightDto>(StatusCodes.Status200OK)
         .Produces<ProblemDetails>(StatusCodes.Status409Conflict)
         .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
