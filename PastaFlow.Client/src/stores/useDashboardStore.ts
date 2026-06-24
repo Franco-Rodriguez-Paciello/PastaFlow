@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import type { DashboardStatsDto, FinancialDashboardDto } from '../types/api.types';
-import { getDashboardStats, getFinancialDashboard } from '../services/dashboardService';
+import type { DashboardStatsDto, FinancialDashboardDto, ComprasInsightDto } from '../types/api.types';
+import { getDashboardStats, getFinancialDashboard, generateComprasInsight } from '../services/dashboardService';
+import { ApiError } from '../lib/apiError';
 
 interface DashboardStore {
   stats: DashboardStatsDto | null;
@@ -11,9 +12,15 @@ interface DashboardStore {
   financialLoading: boolean;
   financialError: string | null;
 
+  insight: ComprasInsightDto | null;
+  insightLoading: boolean;
+  insightError: string | null;
+
   init: () => Promise<void>;
   fetchStats: () => Promise<void>;
   fetchFinancial: () => Promise<void>;
+  generateInsight: () => Promise<void>;
+  dismissInsightError: () => void;
 }
 
 export const useDashboardStore = create<DashboardStore>((set) => ({
@@ -24,6 +31,10 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
   financial: null,
   financialLoading: false,
   financialError: null,
+
+  insight: null,
+  insightLoading: false,
+  insightError: null,
 
   init: async () => {
     await Promise.all([
@@ -59,6 +70,25 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
       set({ financialLoading: false });
     }
   },
+
+  generateInsight: async () => {
+    set({ insightLoading: true, insightError: null });
+    try {
+      const data = await generateComprasInsight();
+      set({ insight: data });
+    } catch (err) {
+      const message = err instanceof ApiError
+        ? err.detail ?? err.message
+        : err instanceof Error
+          ? err.message
+          : 'Error al generar el insight de compras.';
+      set({ insightError: message });
+    } finally {
+      set({ insightLoading: false });
+    }
+  },
+
+  dismissInsightError: () => set({ insightError: null }),
 }));
 
 export function timeAgo(isoDate: string): string {

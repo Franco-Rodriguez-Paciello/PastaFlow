@@ -161,3 +161,8 @@ export interface FinancialDashboardDto {
   totalTransferenciaHoy: number;
   top5ProductosMasVendidos: ProductoMasVendidoDto[];
 }
+
+export interface ComprasInsightDto {
+  reporte: string;
+  generadoEnUtc: string;
+}

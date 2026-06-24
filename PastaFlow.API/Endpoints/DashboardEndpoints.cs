@@ -34,6 +34,19 @@ public static class DashboardEndpoints
         .Produces<FinancialDashboardDto>(StatusCodes.Status200OK)
         .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
 
+        group.MapPost("/insights/compras", async (
+            GenerateComprasInsightQueryHandler handler,
+            CancellationToken ct) =>
+        {
+            ComprasInsightDto insight = await handler.HandleAsync(new GenerateComprasInsightQuery(), ct);
+            return Results.Ok(insight);
+        })
+        .WithName("GenerateComprasInsight")
+        .WithSummary("Genera un informe de compras y alertas de stock asistido por IA (on-demand)")
+        .Produces<ComprasInsightDto>(StatusCodes.Status200OK)
+        .Produces<ProblemDetails>(StatusCodes.Status409Conflict)
+        .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
+
         return app;
     }
 }

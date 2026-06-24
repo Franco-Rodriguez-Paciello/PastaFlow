@@ -11,7 +11,10 @@ using PastaFlow.Application.Commands.Produccion;
 using PastaFlow.Application.Commands.Productos;
 using PastaFlow.Application.Commands.Ventas;
 using PastaFlow.Application.Interfaces;
+using PastaFlow.Application.Options;
 using PastaFlow.Application.Queries.Dashboard;
+using PastaFlow.Application.Services;
+using PastaFlow.Infrastructure.Ai;
 using PastaFlow.Application.Queries.Ingredientes;
 using PastaFlow.Application.Queries.Produccion;
 using PastaFlow.Application.Queries.Productos;
@@ -80,6 +83,11 @@ try
 
     builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 
+    builder.Services.Configure<ComprasInsightOptions>(
+        builder.Configuration.GetSection(ComprasInsightOptions.SectionName));
+    builder.Services.AddLlmCompletionService(builder.Configuration);
+    builder.Services.AddScoped<IComprasInsightContextBuilder, ComprasInsightContextBuilder>();
+
     // Registra automáticamente todos los validadores del ensamblado Application
     builder.Services.AddValidatorsFromAssemblyContaining<RegistrarProduccionCommandValidator>();
 
@@ -111,6 +119,7 @@ try
     builder.Services.AddScoped<GetHistorialProduccionQueryHandler>();
     builder.Services.AddScoped<GetDashboardStatsQueryHandler>();
     builder.Services.AddScoped<GetFinancialDashboardQueryHandler>();
+    builder.Services.AddScoped<GenerateComprasInsightQueryHandler>();
     builder.Services.AddScoped<RegistrarVentaCommandHandler>();
 
     var app = builder.Build();

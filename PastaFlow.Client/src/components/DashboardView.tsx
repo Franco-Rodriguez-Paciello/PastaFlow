@@ -7,6 +7,7 @@ import MetricCard from './dashboard/MetricCard';
 import StockCriticoPanel from './dashboard/StockCriticoPanel';
 import ProduccionRecientePanel from './dashboard/ProduccionRecientePanel';
 import DashboardFinancialSection from './dashboard/DashboardFinancialSection';
+import ComprasInsightPanel from './dashboard/ComprasInsightPanel';
 
 export default function DashboardView() {
   const { stats, statsLoading, statsError, init } = useDashboardStore();
@@ -77,6 +78,8 @@ export default function DashboardView() {
         <StockCriticoPanel items={stats.listaStockCritico} />
         <ProduccionRecientePanel items={stats.ultimasProducciones} />
       </div>
+
+      <ComprasInsightPanel />
 
       <div className="flex items-center gap-3 mt-2">
         <div className="h-px flex-1 bg-gray-200" />

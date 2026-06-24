@@ -1,5 +1,6 @@
-import type { DashboardStatsDto, FinancialDashboardDto } from '../types/api.types';
+import type { DashboardStatsDto, FinancialDashboardDto, ComprasInsightDto } from '../types/api.types';
 import { apiFetch } from '../lib/apiFetch';
+import { parseApiError } from '../lib/apiError';
 
 export async function getDashboardStats(): Promise<DashboardStatsDto> {
   const response = await apiFetch('/api/dashboard/stats');
@@ -17,4 +18,12 @@ export async function getFinancialDashboard(): Promise<FinancialDashboardDto> {
     throw new Error(body.detail ?? `Error al obtener datos financieros: ${response.status}`);
   }
   return response.json() as Promise<FinancialDashboardDto>;
+}
+
+export async function generateComprasInsight(): Promise<ComprasInsightDto> {
+  const response = await apiFetch('/api/dashboard/insights/compras', { method: 'POST' });
+  if (!response.ok) {
+    throw await parseApiError(response);
+  }
+  return response.json() as Promise<ComprasInsightDto>;
 }
