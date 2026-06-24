@@ -7,6 +7,13 @@ public sealed record ComprasInsightDto(
     string Origen,
     string DiaOperativo);
 
+public sealed record ComprasInsightResumenDto(
+    int Id,
+    DateTime GeneradoEnUtc,
+    string Origen,
+    string DiaOperativo,
+    string VistaPrevia);
+
 public sealed record ComprasInsightContextDto(
     DateTime ConsultaUtc,
     string DiaOperativo,

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PastaFlow.Application.DTOs;
 using PastaFlow.Application.Interfaces;
+using PastaFlow.Domain.Entities;
 
 namespace PastaFlow.Application.Queries.Dashboard;
 
@@ -20,22 +21,18 @@ public sealed class GetFinancialDashboardQueryHandler
         var hoyUtc = DateTime.UtcNow.Date;
         var mananaUtc = hoyUtc.AddDays(1);
 
-        // 1. Ventas del día: un único viaje a BD que trae los agregados de pago
-        var ventasHoy = await _context.Ventas
+        // 1. Ventas del día: agregados con SumAsync (evita GroupBy + FirstOrDefault sin OrderBy)
+        IQueryable<Venta> ventasHoyQuery = _context.Ventas
             .AsNoTracking()
-            .Where(v => v.Fecha >= hoyUtc && v.Fecha < mananaUtc)
-            .GroupBy(_ => 1)
-            .Select(g => new
-            {
-                Total = g.Sum(v => v.Total),
-                Efectivo = g.Where(v => v.MetodoPago == "Efectivo").Sum(v => v.Total),
-                Transferencia = g.Where(v => v.MetodoPago == "Transferencia").Sum(v => v.Total)
-            })
-            .FirstOrDefaultAsync(cancellationToken);
+            .Where(v => v.Fecha >= hoyUtc && v.Fecha < mananaUtc);
 
-        decimal ventasTotalesHoy = ventasHoy?.Total ?? 0m;
-        decimal totalEfectivoHoy = ventasHoy?.Efectivo ?? 0m;
-        decimal totalTransferenciaHoy = ventasHoy?.Transferencia ?? 0m;
+        decimal ventasTotalesHoy = await ventasHoyQuery.SumAsync(v => v.Total, cancellationToken);
+        decimal totalEfectivoHoy = await ventasHoyQuery
+            .Where(v => v.MetodoPago == "Efectivo")
+            .SumAsync(v => v.Total, cancellationToken);
+        decimal totalTransferenciaHoy = await ventasHoyQuery
+            .Where(v => v.MetodoPago == "Transferencia")
+            .SumAsync(v => v.Total, cancellationToken);
 
         // 2. Top 5 productos más vendidos del día por unidades
         var top5Raw = await _context.DetallesVenta

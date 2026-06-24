@@ -124,6 +124,8 @@ try
     builder.Services.AddScoped<GetFinancialDashboardQueryHandler>();
     builder.Services.AddScoped<GenerateComprasInsightCommandHandler>();
     builder.Services.AddScoped<GetUltimoComprasInsightQueryHandler>();
+    builder.Services.AddScoped<GetHistorialComprasInsightsQueryHandler>();
+    builder.Services.AddScoped<GetComprasInsightByIdQueryHandler>();
     builder.Services.AddScoped<RegistrarVentaCommandHandler>();
 
     var app = builder.Build();

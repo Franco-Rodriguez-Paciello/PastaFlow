@@ -1,14 +1,19 @@
 import { Sparkles, Loader2, RefreshCw } from 'lucide-react';
 import { useDashboardStore } from '../../stores/useDashboardStore';
 import InsightReportView from './InsightReportView';
+import InsightHistorialPanel from './InsightHistorialPanel';
 
 export default function ComprasInsightPanel() {
   const {
     insight,
+    insightHistorial,
     insightFetching,
+    insightHistorialLoading,
+    insightSelectingId,
     insightLoading,
     insightError,
     generateInsight,
+    selectInsightById,
     dismissInsightError,
   } = useDashboardStore();
 
@@ -118,6 +123,14 @@ export default function ComprasInsightPanel() {
           diaOperativo={insight.diaOperativo}
         />
       )}
+
+      <InsightHistorialPanel
+        items={insightHistorial}
+        selectedId={insight?.id ?? null}
+        loading={insightHistorialLoading}
+        selectingId={insightSelectingId}
+        onSelect={(id) => void selectInsightById(id)}
+      />
     </div>
   );
 }

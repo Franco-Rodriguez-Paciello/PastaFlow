@@ -1,4 +1,4 @@
-import type { DashboardStatsDto, FinancialDashboardDto, ComprasInsightDto } from '../types/api.types';
+import type { DashboardStatsDto, FinancialDashboardDto, ComprasInsightDto, ComprasInsightResumenDto } from '../types/api.types';
 import { apiFetch } from '../lib/apiFetch';
 import { parseApiError } from '../lib/apiError';
 
@@ -31,6 +31,22 @@ export async function getUltimoComprasInsight(): Promise<ComprasInsightDto | nul
 
 export async function generateComprasInsight(): Promise<ComprasInsightDto> {
   const response = await apiFetch('/api/dashboard/insights/compras', { method: 'POST' });
+  if (!response.ok) {
+    throw await parseApiError(response);
+  }
+  return response.json() as Promise<ComprasInsightDto>;
+}
+
+export async function getHistorialComprasInsights(take = 10): Promise<ComprasInsightResumenDto[]> {
+  const response = await apiFetch(`/api/dashboard/insights/compras/historial?take=${take}`);
+  if (!response.ok) {
+    throw await parseApiError(response);
+  }
+  return response.json() as Promise<ComprasInsightResumenDto[]>;
+}
+
+export async function getComprasInsightById(id: number): Promise<ComprasInsightDto> {
+  const response = await apiFetch(`/api/dashboard/insights/compras/${id}`);
   if (!response.ok) {
     throw await parseApiError(response);
   }

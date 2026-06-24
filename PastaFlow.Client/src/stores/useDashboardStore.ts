@@ -1,6 +1,18 @@
 import { create } from 'zustand';
-import type { DashboardStatsDto, FinancialDashboardDto, ComprasInsightDto } from '../types/api.types';
-import { getDashboardStats, getFinancialDashboard, getUltimoComprasInsight, generateComprasInsight } from '../services/dashboardService';
+import type {
+  DashboardStatsDto,
+  FinancialDashboardDto,
+  ComprasInsightDto,
+  ComprasInsightResumenDto,
+} from '../types/api.types';
+import {
+  getDashboardStats,
+  getFinancialDashboard,
+  getUltimoComprasInsight,
+  getHistorialComprasInsights,
+  getComprasInsightById,
+  generateComprasInsight,
+} from '../services/dashboardService';
 import { ApiError } from '../lib/apiError';
 
 interface DashboardStore {
@@ -13,7 +25,10 @@ interface DashboardStore {
   financialError: string | null;
 
   insight: ComprasInsightDto | null;
+  insightHistorial: ComprasInsightResumenDto[];
   insightFetching: boolean;
+  insightHistorialLoading: boolean;
+  insightSelectingId: number | null;
   insightLoading: boolean;
   insightError: string | null;
 
@@ -21,11 +36,13 @@ interface DashboardStore {
   fetchStats: () => Promise<void>;
   fetchFinancial: () => Promise<void>;
   fetchUltimoInsight: () => Promise<void>;
+  fetchInsightHistorial: () => Promise<void>;
+  selectInsightById: (id: number) => Promise<void>;
   generateInsight: () => Promise<void>;
   dismissInsightError: () => void;
 }
 
-export const useDashboardStore = create<DashboardStore>((set) => ({
+export const useDashboardStore = create<DashboardStore>((set, get) => ({
   stats: null,
   statsLoading: false,
   statsError: null,
@@ -35,15 +52,19 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
   financialError: null,
 
   insight: null,
+  insightHistorial: [],
   insightFetching: false,
+  insightHistorialLoading: false,
+  insightSelectingId: null,
   insightLoading: false,
   insightError: null,
 
   init: async () => {
     await Promise.all([
-      useDashboardStore.getState().fetchStats(),
-      useDashboardStore.getState().fetchFinancial(),
-      useDashboardStore.getState().fetchUltimoInsight(),
+      get().fetchStats(),
+      get().fetchFinancial(),
+      get().fetchUltimoInsight(),
+      get().fetchInsightHistorial(),
     ]);
   },
 
@@ -89,11 +110,43 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
     }
   },
 
+  fetchInsightHistorial: async () => {
+    set({ insightHistorialLoading: true });
+    try {
+      const data = await getHistorialComprasInsights(10);
+      set({ insightHistorial: data });
+    } catch {
+      set({ insightHistorial: [] });
+    } finally {
+      set({ insightHistorialLoading: false });
+    }
+  },
+
+  selectInsightById: async (id) => {
+    if (get().insight?.id === id) return;
+
+    set({ insightSelectingId: id, insightError: null });
+    try {
+      const data = await getComprasInsightById(id);
+      set({ insight: data });
+    } catch (err) {
+      const message = err instanceof ApiError
+        ? err.detail ?? err.message
+        : err instanceof Error
+          ? err.message
+          : 'Error al cargar el informe.';
+      set({ insightError: message });
+    } finally {
+      set({ insightSelectingId: null });
+    }
+  },
+
   generateInsight: async () => {
     set({ insightLoading: true, insightError: null });
     try {
       const data = await generateComprasInsight();
       set({ insight: data });
+      await get().fetchInsightHistorial();
     } catch (err) {
       const message = err instanceof ApiError
         ? err.detail ?? err.message

@@ -162,6 +162,14 @@ export interface FinancialDashboardDto {
   top5ProductosMasVendidos: ProductoMasVendidoDto[];
 }
 
+export interface ComprasInsightResumenDto {
+  id: number;
+  generadoEnUtc: string;
+  origen: 'Automatico' | 'Manual';
+  diaOperativo: string;
+  vistaPrevia: string;
+}
+
 export interface ComprasInsightDto {
   id: number;
   reporte: string;

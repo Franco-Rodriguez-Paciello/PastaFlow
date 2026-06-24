@@ -36,6 +36,35 @@ public static class DashboardEndpoints
         .Produces<FinancialDashboardDto>(StatusCodes.Status200OK)
         .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
 
+        group.MapGet("/insights/compras/historial", async (
+            [FromQuery] int? take,
+            GetHistorialComprasInsightsQueryHandler handler,
+            CancellationToken ct) =>
+        {
+            IReadOnlyCollection<ComprasInsightResumenDto> historial = await handler.HandleAsync(
+                new GetHistorialComprasInsightsQuery(take ?? 10),
+                ct);
+            return Results.Ok(historial);
+        })
+        .WithName("GetHistorialComprasInsights")
+        .WithSummary("Lista los informes de compras persistidos (más recientes primero)")
+        .Produces<IReadOnlyCollection<ComprasInsightResumenDto>>(StatusCodes.Status200OK)
+        .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
+
+        group.MapGet("/insights/compras/{id:int}", async (
+            int id,
+            GetComprasInsightByIdQueryHandler handler,
+            CancellationToken ct) =>
+        {
+            ComprasInsightDto insight = await handler.HandleAsync(new GetComprasInsightByIdQuery(id), ct);
+            return Results.Ok(insight);
+        })
+        .WithName("GetComprasInsightById")
+        .WithSummary("Retorna un informe de compras por Id")
+        .Produces<ComprasInsightDto>(StatusCodes.Status200OK)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
+        .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
+
         group.MapGet("/insights/compras", async (
             GetUltimoComprasInsightQueryHandler handler,
             CancellationToken ct) =>
