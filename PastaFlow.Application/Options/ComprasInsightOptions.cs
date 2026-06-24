@@ -25,4 +25,9 @@ public sealed class ComprasInsightOptions
 
     /// <summary>Habilita la generación automática diaria en segundo plano.</summary>
     public bool JobNocturnoHabilitado { get; init; } = true;
+
+    /// <summary>
+    /// Envía correo al generar el insight automático (requiere Email:Habilitado).
+    /// </summary>
+    public bool EnviarEmailEnGeneracionAutomatica { get; init; } = true;
 }

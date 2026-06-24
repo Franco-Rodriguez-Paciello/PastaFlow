@@ -178,6 +178,19 @@ export interface ComprasInsightDto {
   diaOperativo: string;
 }
 
+export type ComprasInsightEmailEstado =
+  | 'NoSolicitado'
+  | 'Deshabilitado'
+  | 'SinDestinatarios'
+  | 'Enviado'
+  | 'Error';
+
+export interface GenerateComprasInsightResultDto {
+  insight: ComprasInsightDto;
+  emailEstado: ComprasInsightEmailEstado;
+  emailDetalle: string | null;
+}
+
 export interface ProveedorIngredienteDto {
   ingredienteId: number;
   ingredienteNombre: string;

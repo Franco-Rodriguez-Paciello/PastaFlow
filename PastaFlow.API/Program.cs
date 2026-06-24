@@ -24,6 +24,7 @@ using PastaFlow.Application.Queries.Proveedores;
 using PastaFlow.Domain;
 using PastaFlow.Domain.Services;
 using PastaFlow.Infrastructure.Auth;
+using PastaFlow.Infrastructure.Email;
 using PastaFlow.Infrastructure.Jobs;
 using PastaFlow.Infrastructure.Persistence;
 using PastaFlow.Infrastructure.Persistence.Seeding;
@@ -91,6 +92,7 @@ try
     builder.Services.Configure<ComprasInsightOptions>(
         builder.Configuration.GetSection(ComprasInsightOptions.SectionName));
     builder.Services.AddLlmCompletionService(builder.Configuration);
+    builder.Services.AddEmailServices(builder.Configuration);
     builder.Services.AddScoped<IComprasInsightContextBuilder, ComprasInsightContextBuilder>();
     builder.Services.AddHostedService<ComprasInsightScheduledService>();
 

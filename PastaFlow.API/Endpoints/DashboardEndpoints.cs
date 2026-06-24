@@ -6,6 +6,8 @@ using PastaFlow.Domain.Entities;
 
 namespace PastaFlow.API.Endpoints;
 
+public sealed record GenerateComprasInsightRequest(bool EnviarPorEmail = false);
+
 public static class DashboardEndpoints
 {
     public static IEndpointRouteBuilder MapDashboardEndpoints(this IEndpointRouteBuilder app)
@@ -79,17 +81,20 @@ public static class DashboardEndpoints
         .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
 
         group.MapPost("/insights/compras", async (
+            [FromBody] GenerateComprasInsightRequest? body,
             GenerateComprasInsightCommandHandler handler,
             CancellationToken ct) =>
         {
-            ComprasInsightDto insight = await handler.HandleAsync(
-                new GenerateComprasInsightCommand(OrigenInformeCompras.Manual),
+            GenerateComprasInsightResultDto resultado = await handler.HandleAsync(
+                new GenerateComprasInsightCommand(
+                    OrigenInformeCompras.Manual,
+                    body?.EnviarPorEmail ?? false),
                 ct);
-            return Results.Ok(insight);
+            return Results.Ok(resultado);
         })
         .WithName("GenerateComprasInsight")
         .WithSummary("Genera un informe de compras asistido por IA y lo persiste (on-demand)")
-        .Produces<ComprasInsightDto>(StatusCodes.Status200OK)
+        .Produces<GenerateComprasInsightResultDto>(StatusCodes.Status200OK)
         .Produces<ProblemDetails>(StatusCodes.Status409Conflict)
         .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
 

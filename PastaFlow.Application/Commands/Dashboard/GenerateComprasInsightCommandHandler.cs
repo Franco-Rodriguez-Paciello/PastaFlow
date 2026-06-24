@@ -12,6 +12,7 @@ namespace PastaFlow.Application.Commands.Dashboard;
 public sealed class GenerateComprasInsightCommandHandler(
     IComprasInsightContextBuilder contextBuilder,
     ILlmCompletionService llmCompletionService,
+    IComprasInsightEmailNotifier emailNotifier,
     IPastaFlowDbContext context)
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -20,7 +21,7 @@ public sealed class GenerateComprasInsightCommandHandler(
         WriteIndented = true
     };
 
-    public async Task<ComprasInsightDto> HandleAsync(
+    public async Task<GenerateComprasInsightResultDto> HandleAsync(
         GenerateComprasInsightCommand command,
         CancellationToken cancellationToken = default)
     {
@@ -40,11 +41,19 @@ public sealed class GenerateComprasInsightCommandHandler(
         context.InformesComprasInsight.Add(informe);
         await context.SaveChangesAsync(cancellationToken);
 
-        return new ComprasInsightDto(
+        var insight = new ComprasInsightDto(
             informe.Id,
             informe.Reporte,
             informe.GeneradoEnUtc,
             informe.Origen.ToString(),
             informe.DiaOperativo);
+
+        ComprasInsightEmailResult email = await emailNotifier.NotifyIfConfiguredAsync(
+            insight,
+            command.Origen,
+            command.EnviarPorEmail,
+            cancellationToken);
+
+        return new GenerateComprasInsightResultDto(insight, email.Estado, email.Detalle);
     }
 }

@@ -14,6 +14,14 @@ import {
   generateComprasInsight,
 } from '../services/dashboardService';
 import { ApiError } from '../lib/apiError';
+import type { InsightEmailToastVariant } from '../components/dashboard/InsightEmailToast';
+import { emailEstadoToToast } from '../components/dashboard/InsightEmailToast';
+
+export interface InsightEmailToastState {
+  variant: InsightEmailToastVariant;
+  title: string;
+  message: string;
+}
 
 interface DashboardStore {
   stats: DashboardStatsDto | null;
@@ -31,6 +39,8 @@ interface DashboardStore {
   insightSelectingId: number | null;
   insightLoading: boolean;
   insightError: string | null;
+  insightEnviarPorEmail: boolean;
+  insightEmailToast: InsightEmailToastState | null;
 
   init: () => Promise<void>;
   fetchStats: () => Promise<void>;
@@ -38,8 +48,10 @@ interface DashboardStore {
   fetchUltimoInsight: () => Promise<void>;
   fetchInsightHistorial: () => Promise<void>;
   selectInsightById: (id: number) => Promise<void>;
+  setInsightEnviarPorEmail: (value: boolean) => void;
   generateInsight: () => Promise<void>;
   dismissInsightError: () => void;
+  dismissInsightEmailToast: () => void;
 }
 
 export const useDashboardStore = create<DashboardStore>((set, get) => ({
@@ -58,6 +70,8 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
   insightSelectingId: null,
   insightLoading: false,
   insightError: null,
+  insightEnviarPorEmail: false,
+  insightEmailToast: null,
 
   init: async () => {
     await Promise.all([
@@ -142,10 +156,18 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
   },
 
   generateInsight: async () => {
-    set({ insightLoading: true, insightError: null });
+    const enviarPorEmail = get().insightEnviarPorEmail;
+    set({ insightLoading: true, insightError: null, insightEmailToast: null });
     try {
-      const data = await generateComprasInsight();
-      set({ insight: data });
+      const resultado = await generateComprasInsight(enviarPorEmail);
+      set({ insight: resultado.insight });
+
+      const toast = emailEstadoToToast(resultado.emailEstado, resultado.emailDetalle);
+      if (toast) {
+        set({ insightEmailToast: toast });
+        setTimeout(() => set({ insightEmailToast: null }), 6000);
+      }
+
       await get().fetchInsightHistorial();
     } catch (err) {
       const message = err instanceof ApiError
@@ -159,7 +181,9 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
     }
   },
 
+  setInsightEnviarPorEmail: (value) => set({ insightEnviarPorEmail: value }),
   dismissInsightError: () => set({ insightError: null }),
+  dismissInsightEmailToast: () => set({ insightEmailToast: null }),
 }));
 
 export function timeAgo(isoDate: string): string {
