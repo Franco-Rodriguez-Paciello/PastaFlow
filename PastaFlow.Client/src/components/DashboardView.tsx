@@ -9,7 +9,11 @@ import ProduccionRecientePanel from './dashboard/ProduccionRecientePanel';
 import DashboardFinancialSection from './dashboard/DashboardFinancialSection';
 import ComprasInsightPanel from './dashboard/ComprasInsightPanel';
 
-export default function DashboardView() {
+interface DashboardViewProps {
+  onNavigate?: (view: string) => void;
+}
+
+export default function DashboardView({ onNavigate }: DashboardViewProps) {
   const { stats, statsLoading, statsError, init } = useDashboardStore();
 
   useEffect(() => {
@@ -79,7 +83,7 @@ export default function DashboardView() {
         <ProduccionRecientePanel items={stats.ultimasProducciones} />
       </div>
 
-      <ComprasInsightPanel />
+      <ComprasInsightPanel onVerHistorialCompleto={onNavigate ? () => onNavigate('insights-compras') : undefined} />
 
       <div className="flex items-center gap-3 mt-2">
         <div className="h-px flex-1 bg-gray-200" />

@@ -131,6 +131,7 @@ try
     builder.Services.AddScoped<GetUltimoComprasInsightQueryHandler>();
     builder.Services.AddScoped<GetHistorialComprasInsightsQueryHandler>();
     builder.Services.AddScoped<GetComprasInsightByIdQueryHandler>();
+    builder.Services.AddScoped<EliminarComprasInsightCommandHandler>();
     builder.Services.AddScoped<RegistrarProveedorCommandHandler>();
     builder.Services.AddScoped<ActualizarProveedorCommandHandler>();
     builder.Services.AddScoped<VincularIngredienteProveedorCommandHandler>();

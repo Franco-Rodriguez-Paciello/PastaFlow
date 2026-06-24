@@ -127,8 +127,8 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
   fetchInsightHistorial: async () => {
     set({ insightHistorialLoading: true });
     try {
-      const data = await getHistorialComprasInsights(10);
-      set({ insightHistorial: data });
+      const data = await getHistorialComprasInsights({ page: 1, pageSize: 5 });
+      set({ insightHistorial: data.items });
     } catch {
       set({ insightHistorial: [] });
     } finally {

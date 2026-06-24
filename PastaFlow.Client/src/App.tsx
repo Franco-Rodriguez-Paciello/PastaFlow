@@ -10,10 +10,11 @@ import ProduccionDiariaView from './components/ProduccionDiariaView';
 import HistorialProduccionView from './components/HistorialProduccionView';
 import VentasView from './components/VentasView';
 import ProveedoresView from './components/ProveedoresView';
+import InsightsComprasView from './components/InsightsComprasView';
 import { useAuth } from './context/AuthContext';
 
 // Vistas que solo puede ver un Admin
-const ADMIN_ONLY_VIEWS = new Set(['dashboard', 'insumos', 'proveedores', 'rentabilidad', 'recetas', 'historial']);
+const ADMIN_ONLY_VIEWS = new Set(['dashboard', 'insumos', 'proveedores', 'insights-compras', 'rentabilidad', 'recetas', 'historial']);
 
 function AccessDenied({ onRedirect }: { onRedirect: () => void }) {
   return (
@@ -117,7 +118,7 @@ function App() {
             {view === 'dashboard' && (
               <div>
                 <h2 className="text-2xl font-bold text-gray-800 mb-6">Panel Principal</h2>
-                <DashboardView />
+                <DashboardView onNavigate={setView} />
               </div>
             )}
 
@@ -129,6 +130,8 @@ function App() {
             )}
 
             {view === 'proveedores' && <ProveedoresView />}
+
+            {view === 'insights-compras' && <InsightsComprasView />}
 
             {view === 'rentabilidad' && (
               <div>

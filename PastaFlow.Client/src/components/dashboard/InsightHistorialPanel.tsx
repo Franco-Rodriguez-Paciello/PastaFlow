@@ -8,6 +8,7 @@ interface InsightHistorialPanelProps {
   loading: boolean;
   selectingId: number | null;
   onSelect: (id: number) => void;
+  onVerHistorialCompleto?: () => void;
 }
 
 function origenLabel(origen: ComprasInsightResumenDto['origen']): string {
@@ -20,6 +21,7 @@ export default function InsightHistorialPanel({
   loading,
   selectingId,
   onSelect,
+  onVerHistorialCompleto,
 }: InsightHistorialPanelProps) {
   if (loading) {
     return (
@@ -35,9 +37,20 @@ export default function InsightHistorialPanel({
 
   return (
     <div className="mt-6 pt-5 border-t border-gray-100">
-      <div className="flex items-center gap-2 mb-3">
-        <History size={16} className="text-gray-400" strokeWidth={1.8} />
-        <h4 className="text-sm font-semibold text-gray-700">Historial reciente</h4>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <History size={16} className="text-gray-400" strokeWidth={1.8} />
+          <h4 className="text-sm font-semibold text-gray-700">Historial reciente</h4>
+        </div>
+        {onVerHistorialCompleto && (
+          <button
+            type="button"
+            onClick={onVerHistorialCompleto}
+            className="text-xs font-medium text-amber-600 hover:text-amber-700 hover:underline"
+          >
+            Ver historial completo →
+          </button>
+        )}
       </div>
 
       <ul className="flex flex-col gap-2 max-h-56 overflow-y-auto pr-1">

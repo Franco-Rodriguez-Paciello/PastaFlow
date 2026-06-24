@@ -4,7 +4,11 @@ import InsightReportView from './InsightReportView';
 import InsightHistorialPanel from './InsightHistorialPanel';
 import InsightEmailToast from './InsightEmailToast';
 
-export default function ComprasInsightPanel() {
+interface ComprasInsightPanelProps {
+  onVerHistorialCompleto?: () => void;
+}
+
+export default function ComprasInsightPanel({ onVerHistorialCompleto }: ComprasInsightPanelProps) {
   const {
     insight,
     insightHistorial,
@@ -153,13 +157,14 @@ export default function ComprasInsightPanel() {
           />
         )}
 
-        <InsightHistorialPanel
-          items={insightHistorial}
-          selectedId={insight?.id ?? null}
-          loading={insightHistorialLoading}
-          selectingId={insightSelectingId}
-          onSelect={(id) => void selectInsightById(id)}
-        />
+      <InsightHistorialPanel
+        items={insightHistorial}
+        selectedId={insight?.id ?? null}
+        loading={insightHistorialLoading}
+        selectingId={insightSelectingId}
+        onSelect={(id) => void selectInsightById(id)}
+        onVerHistorialCompleto={onVerHistorialCompleto}
+      />
       </div>
     </>
   );

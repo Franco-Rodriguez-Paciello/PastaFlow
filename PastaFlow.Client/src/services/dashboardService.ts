@@ -1,4 +1,4 @@
-import type { DashboardStatsDto, FinancialDashboardDto, ComprasInsightDto, ComprasInsightResumenDto, GenerateComprasInsightResultDto } from '../types/api.types';
+import type { DashboardStatsDto, FinancialDashboardDto, ComprasInsightDto, ComprasInsightsPaginadoDto, ComprasInsightsFiltros, GenerateComprasInsightResultDto } from '../types/api.types';
 import { apiFetch } from '../lib/apiFetch';
 import { parseApiError } from '../lib/apiError';
 
@@ -41,12 +41,29 @@ export async function generateComprasInsight(enviarPorEmail = false): Promise<Ge
   return response.json() as Promise<GenerateComprasInsightResultDto>;
 }
 
-export async function getHistorialComprasInsights(take = 10): Promise<ComprasInsightResumenDto[]> {
-  const response = await apiFetch(`/api/dashboard/insights/compras/historial?take=${take}`);
+export async function getHistorialComprasInsights(
+  filtros: ComprasInsightsFiltros = {},
+): Promise<ComprasInsightsPaginadoDto> {
+  const params = new URLSearchParams();
+  if (filtros.fechaDesde) params.set('fechaDesde', filtros.fechaDesde);
+  if (filtros.fechaHasta) params.set('fechaHasta', filtros.fechaHasta);
+  if (filtros.origen) params.set('origen', filtros.origen);
+  if (filtros.page) params.set('page', String(filtros.page));
+  if (filtros.pageSize) params.set('pageSize', String(filtros.pageSize));
+
+  const qs = params.toString();
+  const response = await apiFetch(`/api/dashboard/insights/compras/historial${qs ? `?${qs}` : ''}`);
   if (!response.ok) {
     throw await parseApiError(response);
   }
-  return response.json() as Promise<ComprasInsightResumenDto[]>;
+  return response.json() as Promise<ComprasInsightsPaginadoDto>;
+}
+
+export async function eliminarComprasInsight(id: number): Promise<void> {
+  const response = await apiFetch(`/api/dashboard/insights/compras/${id}`, { method: 'DELETE' });
+  if (!response.ok) {
+    throw await parseApiError(response);
+  }
 }
 
 export async function getComprasInsightById(id: number): Promise<ComprasInsightDto> {

@@ -170,6 +170,21 @@ export interface ComprasInsightResumenDto {
   vistaPrevia: string;
 }
 
+export interface ComprasInsightsPaginadoDto {
+  items: ComprasInsightResumenDto[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface ComprasInsightsFiltros {
+  fechaDesde?: string;
+  fechaHasta?: string;
+  origen?: 'Automatico' | 'Manual';
+  page?: number;
+  pageSize?: number;
+}
+
 export interface ComprasInsightDto {
   id: number;
   reporte: string;

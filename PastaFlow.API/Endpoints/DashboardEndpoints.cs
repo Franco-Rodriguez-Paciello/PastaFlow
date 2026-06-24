@@ -39,18 +39,27 @@ public static class DashboardEndpoints
         .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
 
         group.MapGet("/insights/compras/historial", async (
-            [FromQuery] int? take,
+            [FromQuery] DateTime? fechaDesde,
+            [FromQuery] DateTime? fechaHasta,
+            [FromQuery] OrigenInformeCompras? origen,
+            [FromQuery] int? page,
+            [FromQuery] int? pageSize,
             GetHistorialComprasInsightsQueryHandler handler,
             CancellationToken ct) =>
         {
-            IReadOnlyCollection<ComprasInsightResumenDto> historial = await handler.HandleAsync(
-                new GetHistorialComprasInsightsQuery(take ?? 10),
+            ComprasInsightsPaginadoDto historial = await handler.HandleAsync(
+                new GetHistorialComprasInsightsQuery(
+                    fechaDesde,
+                    fechaHasta,
+                    origen,
+                    page ?? 1,
+                    pageSize ?? 20),
                 ct);
             return Results.Ok(historial);
         })
         .WithName("GetHistorialComprasInsights")
-        .WithSummary("Lista los informes de compras persistidos (más recientes primero)")
-        .Produces<IReadOnlyCollection<ComprasInsightResumenDto>>(StatusCodes.Status200OK)
+        .WithSummary("Lista informes de compras con filtros y paginación")
+        .Produces<ComprasInsightsPaginadoDto>(StatusCodes.Status200OK)
         .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
 
         group.MapGet("/insights/compras/{id:int}", async (
@@ -79,6 +88,19 @@ public static class DashboardEndpoints
         .Produces<ComprasInsightDto>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status404NotFound)
         .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
+
+        group.MapDelete("/insights/compras/{id:int}", async (
+            int id,
+            EliminarComprasInsightCommandHandler handler,
+            CancellationToken ct) =>
+        {
+            await handler.HandleAsync(new EliminarComprasInsightCommand(id), ct);
+            return Results.NoContent();
+        })
+        .WithName("EliminarComprasInsight")
+        .WithSummary("Elimina un informe de compras persistido")
+        .Produces(StatusCodes.Status204NoContent)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
 
         group.MapPost("/insights/compras", async (
             [FromBody] GenerateComprasInsightRequest? body,

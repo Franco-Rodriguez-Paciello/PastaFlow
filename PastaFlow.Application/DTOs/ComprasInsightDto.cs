@@ -27,6 +27,12 @@ public sealed record ComprasInsightContextDto(
     IReadOnlyCollection<PanoramaInsumoFinDeSemanaDto> PanoramaFinDeSemana,
     IReadOnlyCollection<ProveedorInsumoContextDto> ProveedoresPorInsumo);
 
+public sealed record ComprasInsightsPaginadoDto(
+    IReadOnlyCollection<ComprasInsightResumenDto> Items,
+    int Total,
+    int Page,
+    int PageSize);
+
 public sealed record InsumoCriticoContextDto(
     string Nombre,
     decimal StockActual,

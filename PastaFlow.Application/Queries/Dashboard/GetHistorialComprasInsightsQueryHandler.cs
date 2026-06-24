@@ -8,16 +8,37 @@ public sealed class GetHistorialComprasInsightsQueryHandler(IPastaFlowDbContext 
 {
     private const int VistaPreviaMaxLength = 140;
 
-    public async Task<IReadOnlyCollection<ComprasInsightResumenDto>> HandleAsync(
+    public async Task<ComprasInsightsPaginadoDto> HandleAsync(
         GetHistorialComprasInsightsQuery query,
         CancellationToken cancellationToken = default)
     {
-        int take = Math.Clamp(query.Take, 1, 50);
+        int page = Math.Max(1, query.Page);
+        int pageSize = Math.Clamp(query.PageSize, 1, 100);
 
-        var informes = await context.InformesComprasInsight
-            .AsNoTracking()
+        IQueryable<Domain.Entities.InformeComprasInsight> consulta =
+            context.InformesComprasInsight.AsNoTracking();
+
+        if (query.FechaDesde.HasValue)
+        {
+            DateTime desdeUtc = DateTime.SpecifyKind(query.FechaDesde.Value.Date, DateTimeKind.Utc);
+            consulta = consulta.Where(i => i.GeneradoEnUtc >= desdeUtc);
+        }
+
+        if (query.FechaHasta.HasValue)
+        {
+            DateTime hastaUtc = DateTime.SpecifyKind(query.FechaHasta.Value.Date.AddDays(1), DateTimeKind.Utc);
+            consulta = consulta.Where(i => i.GeneradoEnUtc < hastaUtc);
+        }
+
+        if (query.Origen.HasValue)
+            consulta = consulta.Where(i => i.Origen == query.Origen.Value);
+
+        int total = await consulta.CountAsync(cancellationToken);
+
+        var informes = await consulta
             .OrderByDescending(i => i.GeneradoEnUtc)
-            .Take(take)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(i => new
             {
                 i.Id,
@@ -28,7 +49,7 @@ public sealed class GetHistorialComprasInsightsQueryHandler(IPastaFlowDbContext 
             })
             .ToListAsync(cancellationToken);
 
-        return informes
+        var items = informes
             .Select(i => new ComprasInsightResumenDto(
                 i.Id,
                 i.GeneradoEnUtc,
@@ -36,6 +57,8 @@ public sealed class GetHistorialComprasInsightsQueryHandler(IPastaFlowDbContext 
                 i.DiaOperativo,
                 BuildVistaPrevia(i.Reporte)))
             .ToList();
+
+        return new ComprasInsightsPaginadoDto(items, total, page, pageSize);
     }
 
     private static string BuildVistaPrevia(string reporte)
