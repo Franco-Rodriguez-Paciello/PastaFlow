@@ -9,6 +9,7 @@ using PastaFlow.API.Middleware;
 using PastaFlow.Application.Commands.Dashboard;
 using PastaFlow.Application.Commands.Ingredientes;
 using PastaFlow.Application.Commands.Produccion;
+using PastaFlow.Application.Commands.Planificacion;
 using PastaFlow.Application.Commands.Productos;
 using PastaFlow.Application.Commands.Proveedores;
 using PastaFlow.Application.Commands.Ventas;
@@ -17,7 +18,9 @@ using PastaFlow.Application.Options;
 using PastaFlow.Application.Queries.Dashboard;
 using PastaFlow.Application.Services;
 using PastaFlow.Infrastructure.Ai;
+using PastaFlow.Infrastructure.Clima;
 using PastaFlow.Application.Queries.Ingredientes;
+using PastaFlow.Application.Queries.Planificacion;
 using PastaFlow.Application.Queries.Produccion;
 using PastaFlow.Application.Queries.Productos;
 using PastaFlow.Application.Queries.Proveedores;
@@ -92,9 +95,11 @@ try
     builder.Services.Configure<ComprasInsightOptions>(
         builder.Configuration.GetSection(ComprasInsightOptions.SectionName));
     builder.Services.AddLlmCompletionService(builder.Configuration);
+    builder.Services.AddClimaProvider(builder.Configuration);
     builder.Services.AddEmailServices(builder.Configuration);
     builder.Services.AddScoped<IComprasInsightContextBuilder, ComprasInsightContextBuilder>();
     builder.Services.AddScoped<IRecetaAsistenteContextBuilder, RecetaAsistenteContextBuilder>();
+    builder.Services.AddScoped<IPrediccionDemandaService, PrediccionDemandaService>();
     builder.Services.AddHostedService<ComprasInsightScheduledService>();
 
     // Registra automáticamente todos los validadores del ensamblado Application
@@ -142,6 +147,10 @@ try
     builder.Services.AddScoped<DesvincularIngredienteProveedorCommandHandler>();
     builder.Services.AddScoped<GetProveedoresQueryHandler>();
     builder.Services.AddScoped<RegistrarVentaCommandHandler>();
+    builder.Services.AddScoped<GetPrediccionDemandaQueryHandler>();
+    builder.Services.AddScoped<GetSerieHistoricaDemandaQueryHandler>();
+    builder.Services.AddScoped<GetBacktestDemandaQueryHandler>();
+    builder.Services.AddScoped<GenerarRecomendacionDemandaCommandHandler>();
 
     var app = builder.Build();
 
@@ -152,7 +161,8 @@ try
             var db = scope.ServiceProvider.GetRequiredService<PastaFlowDbContext>();
             await db.Database.MigrateAsync();
             await ProveedorDataSeeder.SeedAsync(db);
-            await VentasHistoricasSeeder.SeedAsync(db);
+            bool regenerarVentas = builder.Configuration.GetValue<bool>("Seeding:RegenerarVentasHistoricas");
+            await VentasHistoricasSeeder.SeedAsync(db, regenerarVentas);
         }
 
         app.MapOpenApi();
@@ -171,6 +181,7 @@ try
     app.MapProduccionEndpoints();
     app.MapVentasEndpoints();
     app.MapDashboardEndpoints();
+    app.MapPlanificacionEndpoints();
 
     app.Run();
 }

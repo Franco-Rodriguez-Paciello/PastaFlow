@@ -12,6 +12,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Insumos',               view: 'insumos',     icon: '🧂', adminOnly: true  },
   { label: 'Proveedores',           view: 'proveedores', icon: '🚚', adminOnly: true  },
   { label: 'Insights de Compras',   view: 'insights-compras', icon: '✨', adminOnly: true  },
+  { label: 'Planificación',         view: 'planificacion', icon: '📈', adminOnly: true  },
   { label: 'Rentabilidad',          view: 'rentabilidad',icon: '📊', adminOnly: true  },
   { label: 'Creador de Recetas',    view: 'recetas',     icon: '📋', adminOnly: true  },
   { label: 'Producción Diaria',     view: 'produccion',  icon: '🏭'                   },

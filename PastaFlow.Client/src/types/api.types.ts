@@ -129,6 +129,65 @@ export interface RefinarRecetaSugeridaInput {
   precioVentaObjetivo?: number | null;
 }
 
+// ─── Planificación de Producción (Predicción de demanda) ───────────────────────
+
+export interface RangoAnalisisDemandaDto {
+  desde: string;
+  hasta: string;
+  diasAnalizados: number;
+  totalVentas: number;
+}
+
+export interface ClimaPronosticoDto {
+  disponible: boolean;
+  tempMaxC: number | null;
+  precipMm: number | null;
+  esFrioOLluvioso: boolean;
+  descripcion: string;
+}
+
+export interface PrediccionProductoDto {
+  productoId: number;
+  nombre: string;
+  promedioDiario: number;
+  promedioDiaTipo: number;
+  factorDia29: number;
+  factorClima: number;
+  prediccionUnidades: number;
+  factores: string[];
+}
+
+export interface PrediccionDemandaDto {
+  fechaObjetivo: string;
+  esFinDeSemana: boolean;
+  esDia29: boolean;
+  clima: ClimaPronosticoDto;
+  rango: RangoAnalisisDemandaDto;
+  productos: PrediccionProductoDto[];
+  totalUnidadesPredichas: number;
+  recomendacionIa: string | null;
+}
+
+export interface SerieDiariaDto {
+  fecha: string;
+  unidades: number;
+}
+
+export interface PuntoBacktestDto {
+  fecha: string;
+  real: number;
+  predicho: number;
+}
+
+export interface BacktestDemandaDto {
+  mape: number;
+  precision: number;
+  diasEvaluados: number;
+  testDesde: string;
+  testHasta: string;
+  serie: PuntoBacktestDto[];
+}
+
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
 export interface StockCriticoItemDto {

@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { ShieldAlert } from 'lucide-react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { ShieldAlert, Loader2 } from 'lucide-react';
 import DashboardView from './components/DashboardView';
 import IngredientesView from './components/IngredientesView';
 import LoginView from './components/LoginView';
@@ -11,10 +11,20 @@ import HistorialProduccionView from './components/HistorialProduccionView';
 import VentasView from './components/VentasView';
 import ProveedoresView from './components/ProveedoresView';
 import InsightsComprasView from './components/InsightsComprasView';
+// Carga diferida: recharts (gráficos) solo se descarga al abrir esta vista.
+const PlanificacionView = lazy(() => import('./components/PlanificacionView'));
 import { useAuth } from './context/AuthContext';
 
 // Vistas que solo puede ver un Admin
-const ADMIN_ONLY_VIEWS = new Set(['dashboard', 'insumos', 'proveedores', 'insights-compras', 'rentabilidad', 'recetas', 'historial']);
+const ADMIN_ONLY_VIEWS = new Set(['dashboard', 'insumos', 'proveedores', 'insights-compras', 'planificacion', 'rentabilidad', 'recetas', 'historial']);
+
+function ViewLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+    </div>
+  );
+}
 
 function AccessDenied({ onRedirect }: { onRedirect: () => void }) {
   return (
@@ -132,6 +142,12 @@ function App() {
             {view === 'proveedores' && <ProveedoresView />}
 
             {view === 'insights-compras' && <InsightsComprasView />}
+
+            {view === 'planificacion' && (
+              <Suspense fallback={<ViewLoader />}>
+                <PlanificacionView />
+              </Suspense>
+            )}
 
             {view === 'rentabilidad' && (
               <div>

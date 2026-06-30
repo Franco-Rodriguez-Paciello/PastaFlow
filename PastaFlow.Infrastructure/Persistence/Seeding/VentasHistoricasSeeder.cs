@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PastaFlow.Domain.Entities;
+using PastaFlow.Infrastructure.Clima;
 using PastaFlow.Infrastructure.Persistence;
 
 namespace PastaFlow.Infrastructure.Persistence.Seeding;
@@ -16,10 +17,18 @@ public static class VentasHistoricasSeeder
     private const int MesesHaciaAtras = 6;
     private const int SemillaDeterminista = 20260629;
 
-    public static async Task SeedAsync(PastaFlowDbContext context, CancellationToken cancellationToken = default)
+    public static async Task SeedAsync(
+        PastaFlowDbContext context,
+        bool regenerar = false,
+        CancellationToken cancellationToken = default)
     {
         if (await context.Ventas.AnyAsync(cancellationToken))
-            return;
+        {
+            if (!regenerar)
+                return;
+
+            await BorrarVentasExistentesAsync(context, cancellationToken);
+        }
 
         int? usuarioId = await context.Usuarios
             .OrderBy(u => u.Id)
@@ -53,7 +62,7 @@ public static class VentasHistoricasSeeder
         for (DateOnly dia = desde; dia <= hoy; dia = dia.AddDays(1))
         {
             bool esFinDeSemana = dia.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
-            bool esFrioOLluvia = EsDiaFrioOLluvioso(dia);
+            bool esFrioOLluvia = ClimaDeterminista.EsFrioOLluvioso(dia);
             bool esDia29 = dia.Day == 29;
 
             double[] pesos = CalcularPesos(productos, esDia29, esFrioOLluvia);
@@ -121,6 +130,23 @@ public static class VentasHistoricasSeeder
         return pesos;
     }
 
+    private static async Task BorrarVentasExistentesAsync(
+        PastaFlowDbContext context,
+        CancellationToken cancellationToken)
+    {
+        // Venta → Detalles está configurado como Restrict, así que se borran los detalles primero.
+        List<DetalleVenta> detalles = await context.DetallesVenta.ToListAsync(cancellationToken);
+        context.DetallesVenta.RemoveRange(detalles);
+
+        List<Venta> ventas = await context.Ventas.ToListAsync(cancellationToken);
+        context.Ventas.RemoveRange(ventas);
+
+        await context.SaveChangesAsync(cancellationToken);
+
+        Console.WriteLine(
+            $"[VentasHistoricasSeeder] Se eliminaron {ventas.Count} ventas previas para regenerar.");
+    }
+
     private static int CalcularTickets(bool esFinDeSemana, bool esFrioOLluvia, Random rng)
     {
         int baseTickets = esFinDeSemana ? rng.Next(14, 24) : rng.Next(6, 13);
@@ -151,23 +177,6 @@ public static class VentasHistoricasSeeder
         }
 
         return productos[^1];
-    }
-
-    /// <summary>
-    /// Marca de forma determinista (reproducible) si un día fue frío o lluvioso,
-    /// con más probabilidad en los meses de invierno del hemisferio sur.
-    /// </summary>
-    private static bool EsDiaFrioOLluvioso(DateOnly dia)
-    {
-        double probabilidad = dia.Month switch
-        {
-            6 or 7 or 8 => 0.5,
-            5 or 9 => 0.3,
-            _ => 0.12
-        };
-
-        var rng = new Random(HashCode.Combine(dia.Year, dia.Month, dia.Day));
-        return rng.NextDouble() < probabilidad;
     }
 
     private static DateTime ConstruirFechaUtc(DateOnly dia, Random rng)
