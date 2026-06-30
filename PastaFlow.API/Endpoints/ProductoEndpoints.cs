@@ -37,6 +37,20 @@ public static class ProductoEndpoints
         .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
         .Produces<ProblemDetails>(StatusCodes.Status409Conflict);
 
+        group.MapPost("/recetas/sugerir", async (
+            [FromBody] SugerirRecetaCommand command,
+            SugerirRecetaCommandHandler handler,
+            CancellationToken ct) =>
+        {
+            SugerirRecetaResultDto resultado = await handler.HandleAsync(command, ct);
+            return Results.Ok(resultado);
+        })
+        .WithName("SugerirReceta")
+        .WithSummary("Sugiere una receta con IA a partir de un brief, con costos calculados en servidor")
+        .RequireAuthorization("AdminOnly")
+        .Produces<SugerirRecetaResultDto>(StatusCodes.Status200OK)
+        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest);
+
         group.MapPost("/{id:int}/receta", async (
             int id,
             [FromBody] List<IngredienteRecetaInput> ingredientes,

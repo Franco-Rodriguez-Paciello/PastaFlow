@@ -94,6 +94,7 @@ try
     builder.Services.AddLlmCompletionService(builder.Configuration);
     builder.Services.AddEmailServices(builder.Configuration);
     builder.Services.AddScoped<IComprasInsightContextBuilder, ComprasInsightContextBuilder>();
+    builder.Services.AddScoped<IRecetaAsistenteContextBuilder, RecetaAsistenteContextBuilder>();
     builder.Services.AddHostedService<ComprasInsightScheduledService>();
 
     // Registra automáticamente todos los validadores del ensamblado Application
@@ -119,6 +120,7 @@ try
     builder.Services.AddScoped<RegistrarProductoCommandHandler>();
     builder.Services.AddScoped<AsignarRecetaCommandHandler>();
     builder.Services.AddScoped<GuardarRecetaCommandHandler>();
+    builder.Services.AddScoped<SugerirRecetaCommandHandler>();
     builder.Services.AddScoped<GetProductosQueryHandler>();
     builder.Services.AddScoped<GetProductProfitabilityQueryHandler>();
     builder.Services.AddScoped<GetRecetaByProductoQueryHandler>();

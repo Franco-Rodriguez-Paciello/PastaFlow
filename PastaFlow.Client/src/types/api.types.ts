@@ -63,6 +63,56 @@ export interface RegistrarProductoInput {
   tipoProducto: number;
 }
 
+// ─── Asistente de Recetas (IA) ────────────────────────────────────────────────
+
+export interface IngredienteExistenteSugeridoDto {
+  ingredienteId: number;
+  nombre: string;
+  unidadMedida: string;
+  cantidadPorKg: number;
+  costoUnitario: number;
+  costoParcial: number;
+}
+
+export interface IngredientePropuestoSugeridoDto {
+  clavePropuesta: string;
+  nombreSugerido: string;
+  unidadMedida: string;
+  cantidadPorKg: number;
+  costoUnitarioEstimado: number;
+  motivo: string | null;
+  insumoSimilarId: number | null;
+  nombreInsumoSimilar: string | null;
+  costoParcialEstimado: number;
+}
+
+export interface CostoRecetaSugeridaDto {
+  costoConfirmadoPorKg: number;
+  costoEstimadoAdicionalPorKg: number;
+  costoTotalProyectadoPorKg: number;
+  tieneIngredientesPendientes: boolean;
+  superaCostoMaximo: boolean;
+  margenProyectadoPorKg: number | null;
+  costoMaximoPorKg: number | null;
+  precioVentaObjetivo: number | null;
+}
+
+export interface SugerirRecetaResultDto {
+  nombreProductoSugerido: string;
+  descripcion: string;
+  notasElaboracion: string | null;
+  ingredientesExistentes: IngredienteExistenteSugeridoDto[];
+  ingredientesPropuestos: IngredientePropuestoSugeridoDto[];
+  advertencias: string[];
+  costos: CostoRecetaSugeridaDto;
+}
+
+export interface SugerirRecetaInput {
+  briefUsuario: string;
+  costoMaximoPorKg?: number | null;
+  precioVentaObjetivo?: number | null;
+}
+
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
 export interface StockCriticoItemDto {

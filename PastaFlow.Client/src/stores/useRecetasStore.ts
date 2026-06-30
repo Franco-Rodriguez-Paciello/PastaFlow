@@ -1,11 +1,19 @@
 import { create } from 'zustand';
-import type { IngredienteDto, ProductoDto } from '../types/api.types';
-import { getIngredientes } from '../services/ingredienteService';
+import type {
+  CostoRecetaSugeridaDto,
+  IngredienteDto,
+  IngredienteExistenteSugeridoDto,
+  IngredientePropuestoSugeridoDto,
+  ProductoDto,
+  SugerirRecetaResultDto,
+} from '../types/api.types';
+import { getIngredientes, registrarIngrediente } from '../services/ingredienteService';
 import {
   asignarReceta,
   getProductos,
   getRecetaByProducto,
   registrarProducto,
+  sugerirReceta,
 } from '../services/productoService';
 import { mapRecetaItemsToSeleccionados, type IngredienteSeleccionado } from '../lib/recetaMappers';
 import { ApiError } from '../lib/apiError';
@@ -30,6 +38,39 @@ const INITIAL_NUEVO_FORM: RecetaNuevoForm = {
 
 let successTimer: ReturnType<typeof setTimeout> | null = null;
 
+const UNIDAD_MEDIDA_ENUM: Record<string, number> = {
+  Kilogramo: 0,
+  Litro: 1,
+  Unidad: 2,
+  Docena: 3,
+};
+
+function recalcularCostosSugerencia(
+  existentes: IngredienteExistenteSugeridoDto[],
+  propuestos: IngredientePropuestoSugeridoDto[],
+  prev: CostoRecetaSugeridaDto,
+): CostoRecetaSugeridaDto {
+  const costoConfirmado = existentes.reduce((acc, item) => acc + item.costoParcial, 0);
+  const costoEstimado = propuestos.reduce((acc, item) => acc + item.costoParcialEstimado, 0);
+  const total = costoConfirmado + costoEstimado;
+  const superaMaximo = prev.costoMaximoPorKg !== null
+    && prev.costoMaximoPorKg > 0
+    && total > prev.costoMaximoPorKg;
+  const margen = prev.precioVentaObjetivo !== null
+    ? prev.precioVentaObjetivo - total
+    : null;
+
+  return {
+    ...prev,
+    costoConfirmadoPorKg: costoConfirmado,
+    costoEstimadoAdicionalPorKg: costoEstimado,
+    costoTotalProyectadoPorKg: total,
+    tieneIngredientesPendientes: propuestos.length > 0,
+    superaCostoMaximo: superaMaximo,
+    margenProyectadoPorKg: margen,
+  };
+}
+
 interface RecetasStore {
   ingredientesDisponibles: IngredienteDto[];
   productos: ProductoDto[];
@@ -48,6 +89,14 @@ interface RecetasStore {
   saveError: string | null;
   saveSuccess: boolean;
 
+  asistenteBrief: string;
+  asistenteCostoMaximo: string;
+  asistentePrecioObjetivo: string;
+  sugerencia: SugerirRecetaResultDto | null;
+  sugerenciaLoading: boolean;
+  sugerenciaError: string | null;
+  creandoInsumoClave: string | null;
+
   init: () => Promise<void>;
   setModo: (modo: RecetaModo) => void;
   setBusqueda: (busqueda: string) => void;
@@ -62,6 +111,18 @@ interface RecetasStore {
 
   guardarReceta: () => Promise<void>;
   dismissSaveError: () => void;
+
+  setAsistenteBrief: (value: string) => void;
+  setAsistenteCostoMaximo: (value: string) => void;
+  setAsistentePrecioObjetivo: (value: string) => void;
+  solicitarSugerenciaReceta: () => Promise<void>;
+  descartarSugerencia: () => void;
+  aplicarSugerenciaReceta: () => void;
+  crearInsumoDesdePropuesta: (
+    clavePropuesta: string,
+    input: { nombre: string; unidadMedida: string; costoInicial: number },
+  ) => Promise<void>;
+  dismissSugerenciaError: () => void;
 }
 
 function resetFormulario(): Partial<RecetasStore> {
@@ -90,6 +151,14 @@ export const useRecetasStore = create<RecetasStore>((set, get) => ({
   saving: false,
   saveError: null,
   saveSuccess: false,
+
+  asistenteBrief: '',
+  asistenteCostoMaximo: '',
+  asistentePrecioObjetivo: '',
+  sugerencia: null,
+  sugerenciaLoading: false,
+  sugerenciaError: null,
+  creandoInsumoClave: null,
 
   init: async () => {
     set({ loading: true, error: null });
@@ -258,6 +327,144 @@ export const useRecetasStore = create<RecetasStore>((set, get) => ({
   },
 
   dismissSaveError: () => set({ saveError: null }),
+
+  setAsistenteBrief: (value) => set({ asistenteBrief: value }),
+  setAsistenteCostoMaximo: (value) => set({ asistenteCostoMaximo: value }),
+  setAsistentePrecioObjetivo: (value) => set({ asistentePrecioObjetivo: value }),
+  dismissSugerenciaError: () => set({ sugerenciaError: null }),
+
+  solicitarSugerenciaReceta: async () => {
+    const { asistenteBrief, asistenteCostoMaximo, asistentePrecioObjetivo } = get();
+    if (!asistenteBrief.trim()) {
+      set({ sugerenciaError: 'Describí qué pasta querés desarrollar.' });
+      return;
+    }
+
+    const costoMax = asistenteCostoMaximo.trim() ? parseFloat(asistenteCostoMaximo) : null;
+    const precioObj = asistentePrecioObjetivo.trim() ? parseFloat(asistentePrecioObjetivo) : null;
+
+    set({ sugerenciaLoading: true, sugerenciaError: null });
+    try {
+      const resultado = await sugerirReceta({
+        briefUsuario: asistenteBrief.trim(),
+        costoMaximoPorKg: costoMax !== null && !isNaN(costoMax) ? costoMax : null,
+        precioVentaObjetivo: precioObj !== null && !isNaN(precioObj) ? precioObj : null,
+      });
+      set({ sugerencia: resultado });
+    } catch (err) {
+      const message = err instanceof ApiError
+        ? (err.detail ?? err.message)
+        : err instanceof Error
+          ? err.message
+          : 'Error al generar la sugerencia.';
+      set({ sugerenciaError: message });
+    } finally {
+      set({ sugerenciaLoading: false });
+    }
+  },
+
+  descartarSugerencia: () => set({ sugerencia: null, sugerenciaError: null }),
+
+  aplicarSugerenciaReceta: () => {
+    const { sugerencia, ingredientesDisponibles } = get();
+    if (!sugerencia) return;
+
+    if (sugerencia.costos.tieneIngredientesPendientes) {
+      set({ sugerenciaError: 'Creá todos los insumos nuevos antes de aplicar la receta.' });
+      return;
+    }
+
+    const seleccionados: IngredienteSeleccionado[] = [];
+
+    for (const item of sugerencia.ingredientesExistentes) {
+      const ingrediente = ingredientesDisponibles.find((ing) => ing.id === item.ingredienteId);
+      if (!ingrediente) continue;
+      seleccionados.push({ ingrediente, cantidad: item.cantidadPorKg });
+    }
+
+    if (seleccionados.length === 0) {
+      set({ sugerenciaError: 'No hay insumos válidos para aplicar.' });
+      return;
+    }
+
+    const precioSugerido = sugerencia.costos.precioVentaObjetivo;
+
+    set({
+      modo: 'nuevo',
+      productoId: '',
+      nuevoForm: {
+        nombre: sugerencia.nombreProductoSugerido,
+        descripcion: sugerencia.descripcion,
+        precioVenta: precioSugerido !== null ? String(precioSugerido) : '',
+        stockInicial: '',
+        activoVentaOnline: false,
+      },
+      ingredientesSeleccionados: seleccionados,
+      sugerencia: null,
+      sugerenciaError: null,
+      saveError: null,
+    });
+  },
+
+  crearInsumoDesdePropuesta: async (clavePropuesta, input) => {
+    const { sugerencia } = get();
+    if (!sugerencia) return;
+
+    const propuesta = sugerencia.ingredientesPropuestos.find(
+      (item) => item.clavePropuesta === clavePropuesta,
+    );
+    if (!propuesta) return;
+
+    set({ creandoInsumoClave: clavePropuesta, sugerenciaError: null });
+    try {
+      const unidadEnum = UNIDAD_MEDIDA_ENUM[input.unidadMedida] ?? 0;
+      const nuevoId = await registrarIngrediente({
+        nombre: input.nombre,
+        unidadMedida: unidadEnum,
+        costoInicial: input.costoInicial,
+      });
+
+      const ingredientes = await getIngredientes();
+      const nuevoIngrediente = ingredientes.find((ing) => ing.id === nuevoId);
+      if (!nuevoIngrediente) {
+        throw new Error('El insumo se creó pero no se pudo cargar en la lista.');
+      }
+
+      const costoParcial = propuesta.cantidadPorKg * nuevoIngrediente.costoActual;
+      const nuevoExistente: IngredienteExistenteSugeridoDto = {
+        ingredienteId: nuevoIngrediente.id,
+        nombre: nuevoIngrediente.nombre,
+        unidadMedida: nuevoIngrediente.unidadMedida,
+        cantidadPorKg: propuesta.cantidadPorKg,
+        costoUnitario: nuevoIngrediente.costoActual,
+        costoParcial,
+      };
+
+      const existentes = [...sugerencia.ingredientesExistentes, nuevoExistente];
+      const propuestos = sugerencia.ingredientesPropuestos.filter(
+        (item) => item.clavePropuesta !== clavePropuesta,
+      );
+
+      set({
+        ingredientesDisponibles: ingredientes,
+        sugerencia: {
+          ...sugerencia,
+          ingredientesExistentes: existentes,
+          ingredientesPropuestos: propuestos,
+          costos: recalcularCostosSugerencia(existentes, propuestos, sugerencia.costos),
+        },
+      });
+    } catch (err) {
+      const message = err instanceof ApiError
+        ? (err.detail ?? err.message)
+        : err instanceof Error
+          ? err.message
+          : 'Error al crear el insumo.';
+      set({ sugerenciaError: message });
+    } finally {
+      set({ creandoInsumoClave: null });
+    }
+  },
 }));
 
 export function selectIngredientesFiltrados(

@@ -1,4 +1,5 @@
-import type { ProductProfitabilityDto, ProductoDto, RecetaItemDto, RegistrarProductoInput } from '../types/api.types';
+import type { ProductProfitabilityDto, ProductoDto, RecetaItemDto, RegistrarProductoInput, SugerirRecetaInput, SugerirRecetaResultDto } from '../types/api.types';
+import { throwIfError } from '../lib/apiError';
 import { apiFetch } from '../lib/apiFetch';
 
 export async function registrarProducto(input: RegistrarProductoInput): Promise<number> {
@@ -52,4 +53,14 @@ export async function getProductProfitability(): Promise<ProductProfitabilityDto
     throw new Error(`Error al obtener rentabilidad: ${response.status} ${response.statusText}`);
   }
   return response.json() as Promise<ProductProfitabilityDto[]>;
+}
+
+export async function sugerirReceta(input: SugerirRecetaInput): Promise<SugerirRecetaResultDto> {
+  const response = await apiFetch('/api/productos/recetas/sugerir', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  await throwIfError(response);
+  return response.json() as Promise<SugerirRecetaResultDto>;
 }

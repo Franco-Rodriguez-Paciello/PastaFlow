@@ -66,3 +66,19 @@ export async function registrarAjuste(input: RegistrarAjusteInput): Promise<numb
   const data = await response.json() as { id: number };
   return data.id;
 }
+
+/** 0 = Kilogramo | 1 = Litro | 2 = Unidad | 3 = Docena */
+export async function registrarIngrediente(input: {
+  nombre: string;
+  unidadMedida: number;
+  costoInicial: number;
+}): Promise<number> {
+  const response = await apiFetch('/api/ingredientes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  await throwIfError(response);
+  const data = await response.json() as { id: number };
+  return data.id;
+}

@@ -7,6 +7,7 @@ import {
   useRecetasStore,
 } from '../stores/useRecetasStore';
 import RecetaFormCabecera from './recetas/RecetaFormCabecera';
+import RecetaAsistentePanel from './recetas/RecetaAsistentePanel';
 import InsumosDisponiblesPanel from './recetas/InsumosDisponiblesPanel';
 import RecetaBorradorPanel from './recetas/RecetaBorradorPanel';
 import RecetaSaveBar from './recetas/RecetaSaveBar';
@@ -78,6 +79,7 @@ export default function RecetasCreadorView() {
 
   return (
     <div className="space-y-6">
+      <RecetaAsistentePanel />
       <RecetaFormCabecera />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
