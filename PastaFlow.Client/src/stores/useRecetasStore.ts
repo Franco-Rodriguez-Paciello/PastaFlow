@@ -13,6 +13,7 @@ import {
   getProductos,
   getRecetaByProducto,
   registrarProducto,
+  refinarRecetaSugerida,
   sugerirReceta,
 } from '../services/productoService';
 import { mapRecetaItemsToSeleccionados, type IngredienteSeleccionado } from '../lib/recetaMappers';
@@ -92,6 +93,7 @@ interface RecetasStore {
   asistenteBrief: string;
   asistenteCostoMaximo: string;
   asistentePrecioObjetivo: string;
+  asistenteRefinamiento: string;
   sugerencia: SugerirRecetaResultDto | null;
   sugerenciaLoading: boolean;
   sugerenciaError: string | null;
@@ -115,7 +117,9 @@ interface RecetasStore {
   setAsistenteBrief: (value: string) => void;
   setAsistenteCostoMaximo: (value: string) => void;
   setAsistentePrecioObjetivo: (value: string) => void;
+  setAsistenteRefinamiento: (value: string) => void;
   solicitarSugerenciaReceta: () => Promise<void>;
+  refinarSugerenciaReceta: () => Promise<void>;
   descartarSugerencia: () => void;
   aplicarSugerenciaReceta: () => void;
   crearInsumoDesdePropuesta: (
@@ -155,6 +159,7 @@ export const useRecetasStore = create<RecetasStore>((set, get) => ({
   asistenteBrief: '',
   asistenteCostoMaximo: '',
   asistentePrecioObjetivo: '',
+  asistenteRefinamiento: '',
   sugerencia: null,
   sugerenciaLoading: false,
   sugerenciaError: null,
@@ -331,6 +336,7 @@ export const useRecetasStore = create<RecetasStore>((set, get) => ({
   setAsistenteBrief: (value) => set({ asistenteBrief: value }),
   setAsistenteCostoMaximo: (value) => set({ asistenteCostoMaximo: value }),
   setAsistentePrecioObjetivo: (value) => set({ asistentePrecioObjetivo: value }),
+  setAsistenteRefinamiento: (value) => set({ asistenteRefinamiento: value }),
   dismissSugerenciaError: () => set({ sugerenciaError: null }),
 
   solicitarSugerenciaReceta: async () => {
@@ -350,7 +356,7 @@ export const useRecetasStore = create<RecetasStore>((set, get) => ({
         costoMaximoPorKg: costoMax !== null && !isNaN(costoMax) ? costoMax : null,
         precioVentaObjetivo: precioObj !== null && !isNaN(precioObj) ? precioObj : null,
       });
-      set({ sugerencia: resultado });
+      set({ sugerencia: resultado, asistenteRefinamiento: '' });
     } catch (err) {
       const message = err instanceof ApiError
         ? (err.detail ?? err.message)
@@ -363,7 +369,63 @@ export const useRecetasStore = create<RecetasStore>((set, get) => ({
     }
   },
 
-  descartarSugerencia: () => set({ sugerencia: null, sugerenciaError: null }),
+  refinarSugerenciaReceta: async () => {
+    const {
+      asistenteBrief,
+      asistenteCostoMaximo,
+      asistentePrecioObjetivo,
+      asistenteRefinamiento,
+      sugerencia,
+    } = get();
+
+    if (!sugerencia) return;
+
+    if (!asistenteBrief.trim()) {
+      set({ sugerenciaError: 'Falta el brief original. Descartá y generá una nueva sugerencia.' });
+      return;
+    }
+
+    if (!asistenteRefinamiento.trim()) {
+      set({ sugerenciaError: 'Indicá qué querés ajustar en la sugerencia.' });
+      return;
+    }
+
+    const costoMax = asistenteCostoMaximo.trim() ? parseFloat(asistenteCostoMaximo) : null;
+    const precioObj = asistentePrecioObjetivo.trim() ? parseFloat(asistentePrecioObjetivo) : null;
+
+    set({ sugerenciaLoading: true, sugerenciaError: null });
+    try {
+      const resultado = await refinarRecetaSugerida({
+        briefUsuario: asistenteBrief.trim(),
+        mensajeRefinamiento: asistenteRefinamiento.trim(),
+        sugerenciaAnterior: {
+          nombreProductoSugerido: sugerencia.nombreProductoSugerido,
+          descripcion: sugerencia.descripcion,
+          notasElaboracion: sugerencia.notasElaboracion,
+          ingredientesExistentes: sugerencia.ingredientesExistentes,
+          ingredientesPropuestos: sugerencia.ingredientesPropuestos,
+        },
+        costoMaximoPorKg: costoMax !== null && !isNaN(costoMax) ? costoMax : null,
+        precioVentaObjetivo: precioObj !== null && !isNaN(precioObj) ? precioObj : null,
+      });
+      set({ sugerencia: resultado, asistenteRefinamiento: '' });
+    } catch (err) {
+      const message = err instanceof ApiError
+        ? (err.detail ?? err.message)
+        : err instanceof Error
+          ? err.message
+          : 'Error al refinar la sugerencia.';
+      set({ sugerenciaError: message });
+    } finally {
+      set({ sugerenciaLoading: false });
+    }
+  },
+
+  descartarSugerencia: () => set({
+    sugerencia: null,
+    sugerenciaError: null,
+    asistenteRefinamiento: '',
+  }),
 
   aplicarSugerenciaReceta: () => {
     const { sugerencia, ingredientesDisponibles } = get();

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Sparkles, Loader2, X, AlertTriangle, CheckCircle2, Plus } from 'lucide-react';
+import { Sparkles, Loader2, X, AlertTriangle, CheckCircle2, Plus, Wand2 } from 'lucide-react';
 import type { IngredientePropuestoSugeridoDto } from '../../types/api.types';
 import { useRecetasStore } from '../../stores/useRecetasStore';
 
@@ -14,6 +14,7 @@ export default function RecetaAsistentePanel() {
     asistenteBrief,
     asistenteCostoMaximo,
     asistentePrecioObjetivo,
+    asistenteRefinamiento,
     sugerencia,
     sugerenciaLoading,
     sugerenciaError,
@@ -21,7 +22,9 @@ export default function RecetaAsistentePanel() {
     setAsistenteBrief,
     setAsistenteCostoMaximo,
     setAsistentePrecioObjetivo,
+    setAsistenteRefinamiento,
     solicitarSugerenciaReceta,
+    refinarSugerenciaReceta,
     descartarSugerencia,
     aplicarSugerenciaReceta,
     crearInsumoDesdePropuesta,
@@ -74,8 +77,8 @@ export default function RecetaAsistentePanel() {
               </span>
             </div>
             <p className="text-xs text-gray-400 mt-1 max-w-lg">
-              Describí la pasta que querés desarrollar. La IA sugiere ingredientes por kg;
-              los insumos nuevos deben darse de alta antes de aplicar al formulario.
+              Describí la pasta que querés desarrollar. Después podés ajustar la sugerencia
+              sin empezar de cero. Los insumos nuevos deben darse de alta antes de aplicar.
             </p>
           </div>
         </div>
@@ -177,6 +180,11 @@ export default function RecetaAsistentePanel() {
         </div>
       ) : (
         <div className="space-y-5">
+          <div className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-2.5">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Brief original</p>
+            <p className="text-sm text-gray-700">{asistenteBrief}</p>
+          </div>
+
           <div className="rounded-lg border border-violet-100 bg-violet-50/50 px-4 py-3">
             <h4 className="font-semibold text-gray-800">{sugerencia.nombreProductoSugerido}</h4>
             {sugerencia.descripcion && (
@@ -290,6 +298,49 @@ export default function RecetaAsistentePanel() {
             </div>
           )}
 
+          <div className="rounded-lg border border-violet-200 bg-violet-50/30 p-4 space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                ¿Qué querés ajustar?
+              </label>
+              <textarea
+                rows={2}
+                value={asistenteRefinamiento}
+                onChange={(e) => setAsistenteRefinamiento(e.target.value)}
+                disabled={sugerenciaLoading}
+                placeholder="Ej: Menos ricota y más huevo / Sacá el cordero y usá carne vacuna / Bajá el costo"
+                className="w-full px-3 py-2.5 border border-violet-200 rounded-lg text-sm resize-none bg-white focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent transition disabled:opacity-60"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => void refinarSugerenciaReceta()}
+              disabled={sugerenciaLoading || !asistenteRefinamiento.trim()}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-violet-600 text-white hover:bg-violet-700 shadow-sm transition disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {sugerenciaLoading ? (
+                <>
+                  <Loader2 size={15} className="animate-spin" />
+                  Ajustando…
+                </>
+              ) : (
+                <>
+                  <Wand2 size={15} />
+                  Aplicar ajuste
+                </>
+              )}
+            </button>
+          </div>
+
+          {sugerenciaError && (
+            <div className="flex items-start justify-between gap-3 rounded-lg bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-700">
+              <p>{sugerenciaError}</p>
+              <button type="button" onClick={dismissSugerenciaError} className="text-red-400 hover:text-red-600 shrink-0">
+                <X size={16} />
+              </button>
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-3 pt-1">
             <button
               type="button"
@@ -309,9 +360,10 @@ export default function RecetaAsistentePanel() {
               onClick={() => void solicitarSugerenciaReceta()}
               disabled={sugerenciaLoading}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 transition disabled:opacity-60"
+              title="Genera una sugerencia nueva desde el brief original"
             >
               {sugerenciaLoading ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
-              Regenerar
+              Regenerar desde cero
             </button>
           </div>
         </div>

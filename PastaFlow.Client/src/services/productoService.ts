@@ -1,4 +1,4 @@
-import type { ProductProfitabilityDto, ProductoDto, RecetaItemDto, RegistrarProductoInput, SugerirRecetaInput, SugerirRecetaResultDto } from '../types/api.types';
+import type { ProductProfitabilityDto, ProductoDto, RecetaItemDto, RegistrarProductoInput, RefinarRecetaSugeridaInput, SugerirRecetaInput, SugerirRecetaResultDto } from '../types/api.types';
 import { throwIfError } from '../lib/apiError';
 import { apiFetch } from '../lib/apiFetch';
 
@@ -57,6 +57,16 @@ export async function getProductProfitability(): Promise<ProductProfitabilityDto
 
 export async function sugerirReceta(input: SugerirRecetaInput): Promise<SugerirRecetaResultDto> {
   const response = await apiFetch('/api/productos/recetas/sugerir', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  await throwIfError(response);
+  return response.json() as Promise<SugerirRecetaResultDto>;
+}
+
+export async function refinarRecetaSugerida(input: RefinarRecetaSugeridaInput): Promise<SugerirRecetaResultDto> {
+  const response = await apiFetch('/api/productos/recetas/sugerir/refinar', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),

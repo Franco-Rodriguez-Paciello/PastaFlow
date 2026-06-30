@@ -108,6 +108,7 @@ try
 
     // Servicios de dominio
     builder.Services.AddScoped<ICostoProduccionService, CostoProduccionService>();
+    builder.Services.AddScoped<RecetaSugeridaResultBuilder>();
 
     // Handlers CQRS
     builder.Services.AddScoped<RegistrarIngredienteCommandHandler>();
@@ -121,6 +122,7 @@ try
     builder.Services.AddScoped<AsignarRecetaCommandHandler>();
     builder.Services.AddScoped<GuardarRecetaCommandHandler>();
     builder.Services.AddScoped<SugerirRecetaCommandHandler>();
+    builder.Services.AddScoped<RefinarRecetaSugeridaCommandHandler>();
     builder.Services.AddScoped<GetProductosQueryHandler>();
     builder.Services.AddScoped<GetProductProfitabilityQueryHandler>();
     builder.Services.AddScoped<GetRecetaByProductoQueryHandler>();

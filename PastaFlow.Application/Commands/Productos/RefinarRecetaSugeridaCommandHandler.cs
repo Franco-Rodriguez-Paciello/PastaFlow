@@ -5,7 +5,7 @@ using PastaFlow.Application.Services;
 
 namespace PastaFlow.Application.Commands.Productos;
 
-public sealed class SugerirRecetaCommandHandler(
+public sealed class RefinarRecetaSugeridaCommandHandler(
     IRecetaAsistenteContextBuilder contextBuilder,
     ILlmCompletionService llmCompletionService,
     RecetaSugeridaResultBuilder resultBuilder)
@@ -17,22 +17,32 @@ public sealed class SugerirRecetaCommandHandler(
     };
 
     public async Task<SugerirRecetaResultDto> HandleAsync(
-        SugerirRecetaCommand command,
+        RefinarRecetaSugeridaCommand command,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(command.BriefUsuario))
         {
-            throw new ArgumentException("El brief de la receta no puede estar vacío.");
+            throw new ArgumentException("El brief original no puede estar vacío.");
         }
+
+        if (string.IsNullOrWhiteSpace(command.MensajeRefinamiento))
+        {
+            throw new ArgumentException("Indicá qué querés ajustar en la sugerencia.");
+        }
+
+        ArgumentNullException.ThrowIfNull(command.SugerenciaAnterior);
 
         RecetaAsistenteContextDto contexto = await contextBuilder.BuildAsync(cancellationToken);
         string contextJson = JsonSerializer.Serialize(contexto, JsonOptions);
+        string sugerenciaAnteriorJson = JsonSerializer.Serialize(command.SugerenciaAnterior, JsonOptions);
 
         string rawResponse = await llmCompletionService.GenerateTextAsync(
             RecetaAsistentePrompts.SystemPrompt,
-            RecetaAsistentePrompts.BuildUserPrompt(
+            RecetaAsistentePrompts.BuildRefinementUserPrompt(
                 contextJson,
                 command.BriefUsuario.Trim(),
+                sugerenciaAnteriorJson,
+                command.MensajeRefinamiento.Trim(),
                 command.CostoMaximoPorKg,
                 command.PrecioVentaObjetivo),
             cancellationToken);

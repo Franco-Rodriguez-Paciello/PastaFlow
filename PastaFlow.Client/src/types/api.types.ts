@@ -113,6 +113,22 @@ export interface SugerirRecetaInput {
   precioVentaObjetivo?: number | null;
 }
 
+export interface SugerenciaRecetaAnteriorInput {
+  nombreProductoSugerido: string;
+  descripcion: string;
+  notasElaboracion: string | null;
+  ingredientesExistentes: IngredienteExistenteSugeridoDto[];
+  ingredientesPropuestos: IngredientePropuestoSugeridoDto[];
+}
+
+export interface RefinarRecetaSugeridaInput {
+  briefUsuario: string;
+  mensajeRefinamiento: string;
+  sugerenciaAnterior: SugerenciaRecetaAnteriorInput;
+  costoMaximoPorKg?: number | null;
+  precioVentaObjetivo?: number | null;
+}
+
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
 export interface StockCriticoItemDto {

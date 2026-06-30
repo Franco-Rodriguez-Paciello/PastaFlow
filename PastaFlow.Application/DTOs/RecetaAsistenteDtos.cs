@@ -10,6 +10,13 @@ public sealed record InsumoCatalogoContextDto(
     decimal CostoActual,
     decimal StockActual);
 
+public sealed record SugerenciaRecetaAnteriorDto(
+    string NombreProductoSugerido,
+    string Descripcion,
+    string? NotasElaboracion,
+    IReadOnlyList<IngredienteExistenteSugeridoDto> IngredientesExistentes,
+    IReadOnlyList<IngredientePropuestoSugeridoDto> IngredientesPropuestos);
+
 public sealed record SugerirRecetaResultDto(
     string NombreProductoSugerido,
     string Descripcion,

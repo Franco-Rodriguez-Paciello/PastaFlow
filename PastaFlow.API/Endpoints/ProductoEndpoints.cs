@@ -51,6 +51,20 @@ public static class ProductoEndpoints
         .Produces<SugerirRecetaResultDto>(StatusCodes.Status200OK)
         .Produces<ProblemDetails>(StatusCodes.Status400BadRequest);
 
+        group.MapPost("/recetas/sugerir/refinar", async (
+            [FromBody] RefinarRecetaSugeridaCommand command,
+            RefinarRecetaSugeridaCommandHandler handler,
+            CancellationToken ct) =>
+        {
+            SugerirRecetaResultDto resultado = await handler.HandleAsync(command, ct);
+            return Results.Ok(resultado);
+        })
+        .WithName("RefinarRecetaSugerida")
+        .WithSummary("Ajusta una sugerencia de receta existente según feedback del usuario")
+        .RequireAuthorization("AdminOnly")
+        .Produces<SugerirRecetaResultDto>(StatusCodes.Status200OK)
+        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest);
+
         group.MapPost("/{id:int}/receta", async (
             int id,
             [FromBody] List<IngredienteRecetaInput> ingredientes,

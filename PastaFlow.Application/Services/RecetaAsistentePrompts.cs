@@ -65,4 +65,42 @@ public static class RecetaAsistentePrompts
             {contextJson}
             """;
     }
+
+    public static string BuildRefinementUserPrompt(
+        string contextJson,
+        string briefOriginal,
+        string sugerenciaAnteriorJson,
+        string mensajeRefinamiento,
+        decimal? costoMaximoPorKg,
+        decimal? precioVentaObjetivo)
+    {
+        string restricciones = costoMaximoPorKg is > 0
+            ? $"\nCosto máximo objetivo por kg de producto terminado: ${costoMaximoPorKg:N2} ARS."
+            : string.Empty;
+
+        if (precioVentaObjetivo is > 0)
+        {
+            restricciones += $"\nPrecio de venta objetivo por kg: ${precioVentaObjetivo:N2} ARS.";
+        }
+
+        return $"""
+            Brief original del usuario:
+            {briefOriginal}
+            {restricciones}
+
+            Sugerencia actual de receta (JSON — punto de partida para ajustar):
+            {sugerenciaAnteriorJson}
+
+            Ajuste solicitado por el usuario:
+            {mensajeRefinamiento}
+
+            Devolvé una receta COMPLETA actualizada en el mismo esquema JSON.
+            Aplicá solo los cambios pedidos; conservá lo que siga siendo válido del brief original.
+            Si el usuario pide reemplazar un insumo, actualizá cantidades y listas en consecuencia.
+            Si un insumo propuesto ya fue dado de alta en catálogo, usalo en ingredientesExistentes con su ingredienteId.
+
+            Catálogo de insumos disponibles (JSON):
+            {contextJson}
+            """;
+    }
 }
