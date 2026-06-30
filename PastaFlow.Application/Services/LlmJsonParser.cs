@@ -1,4 +1,5 @@
 using System.Text.Json;
+using PastaFlow.Application.Exceptions;
 
 namespace PastaFlow.Application.Services;
 
@@ -12,15 +13,24 @@ public static class LlmJsonParser
     public static T Deserialize<T>(string rawText)
     {
         string json = ExtractJson(rawText);
-        T? result = JsonSerializer.Deserialize<T>(json, JsonOptions);
 
-        if (result is null)
+        try
         {
-            throw new InvalidOperationException(
-                "La IA no devolvió un JSON válido para la sugerencia de receta.");
-        }
+            T? result = JsonSerializer.Deserialize<T>(json, JsonOptions);
 
-        return result;
+            if (result is null)
+            {
+                throw new LlmServiceException(
+                    "La IA respondió en un formato inesperado. Intentá de nuevo o reformulá el pedido.");
+            }
+
+            return result;
+        }
+        catch (JsonException)
+        {
+            throw new LlmServiceException(
+                "La IA respondió en un formato inesperado. Intentá de nuevo o reformulá el pedido.");
+        }
     }
 
     private static string ExtractJson(string rawText)

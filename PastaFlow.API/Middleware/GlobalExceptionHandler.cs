@@ -2,6 +2,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using PastaFlow.Application.Exceptions;
 using PastaFlow.Domain.Exceptions;
 
 namespace PastaFlow.API.Middleware;
@@ -47,6 +48,16 @@ public sealed class CustomExceptionHandler(ILogger<CustomExceptionHandler> logge
                 Status = StatusCodes.Status409Conflict,
                 Title = "Regla de negocio violada",
                 Detail = exception.Message
+            },
+
+            // Error del proveedor de IA o respuesta no interpretable → 503/502
+            LlmServiceException llm => new ProblemDetails
+            {
+                Status = llm.IsTransient
+                    ? StatusCodes.Status503ServiceUnavailable
+                    : StatusCodes.Status502BadGateway,
+                Title = "Asistente de IA no disponible",
+                Detail = llm.Message
             },
 
             // Regla de negocio o estado inválido en capa de aplicación → 409 Conflict

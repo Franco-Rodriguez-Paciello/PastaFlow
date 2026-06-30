@@ -1,4 +1,5 @@
 using PastaFlow.Application.DTOs;
+using PastaFlow.Application.Exceptions;
 using PastaFlow.Domain.Models;
 using PastaFlow.Domain.Services;
 
@@ -90,8 +91,8 @@ public sealed class RecetaSugeridaResultBuilder(ICostoProduccionService costoPro
 
         if (existentes.Count == 0 && propuestos.Count == 0)
         {
-            throw new InvalidOperationException(
-                "La IA no devolvió ingredientes utilizables. Intentá reformular el pedido.");
+            throw new LlmServiceException(
+                "La IA no devolvió ingredientes utilizables. Reformulá el pedido o probá con otro enfoque.");
         }
 
         decimal costoConfirmado = costoProduccionService.CalcularCostoTotal(

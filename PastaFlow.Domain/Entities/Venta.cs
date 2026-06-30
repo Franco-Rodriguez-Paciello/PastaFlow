@@ -28,4 +28,20 @@ public class Venta
         Total = detalles.Sum(d => d.Subtotal);
         Detalles = detalles;
     }
+
+    /// <summary>
+    /// Crea una venta con fecha explícita. Uso exclusivo para importación o migración
+    /// de ventas históricas (datos previos al sistema o generación de datos de prueba).
+    /// El flujo normal de mostrador debe usar el constructor público (fecha = ahora).
+    /// </summary>
+    public static Venta Importar(
+        int usuarioId,
+        string metodoPago,
+        DateTime fechaUtc,
+        IReadOnlyCollection<DetalleVenta> detalles)
+    {
+        var venta = new Venta(usuarioId, metodoPago, detalles);
+        venta.Fecha = fechaUtc;
+        return venta;
+    }
 }

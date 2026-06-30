@@ -152,6 +152,7 @@ try
             var db = scope.ServiceProvider.GetRequiredService<PastaFlowDbContext>();
             await db.Database.MigrateAsync();
             await ProveedorDataSeeder.SeedAsync(db);
+            await VentasHistoricasSeeder.SeedAsync(db);
         }
 
         app.MapOpenApi();

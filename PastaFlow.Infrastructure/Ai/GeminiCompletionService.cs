@@ -1,7 +1,9 @@
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using PastaFlow.Application.Exceptions;
 using PastaFlow.Application.Interfaces;
 
 namespace PastaFlow.Infrastructure.Ai;
@@ -23,9 +25,9 @@ public sealed class GeminiCompletionService(
         string apiKey = ResolveApiKey();
         if (string.IsNullOrWhiteSpace(apiKey))
         {
-            throw new InvalidOperationException(
-                "La API key de Gemini no está configurada. Definí Gemini__ApiKey como variable de entorno " +
-                "o agregá la clave en la sección Gemini del appsettings (solo desarrollo).");
+            throw new LlmServiceException(
+                LlmErrorMessages.MissingApiKey("Gemini"),
+                isTransient: false);
         }
 
         string model = options.Value.Model;
@@ -50,7 +52,6 @@ public sealed class GeminiCompletionService(
             }
 
             int statusCode = (int)response.StatusCode;
-            string errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (attempt < LlmHttpRetry.MaxAttemptsCount && LlmHttpRetry.IsTransient(statusCode))
             {
@@ -59,16 +60,10 @@ public sealed class GeminiCompletionService(
                 continue;
             }
 
-            string message = statusCode == 429
-                ? "Gemini rechazó la solicitud por límite de cuota o créditos agotados. " +
-                  "Revisá tu plan en https://aistudio.google.com o cambiá Llm:Provider a \"Groq\" en appsettings."
-                : statusCode == 503
-                    ? "Gemini no está disponible temporalmente (alta demanda). El job automático reintentará en el próximo minuto."
-                    : $"Gemini respondió con error {statusCode}: {Truncate(errorBody, 300)}";
-            throw new InvalidOperationException(message);
+            throw new LlmServiceException(LlmErrorMessages.ProviderError("Gemini", statusCode));
         }
 
-        throw new InvalidOperationException("Gemini no respondió tras varios reintentos.");
+        throw new LlmServiceException(LlmErrorMessages.TemporarilyUnavailable);
     }
 
     private static async Task<string> ParseSuccessResponseAsync(
@@ -87,8 +82,7 @@ public sealed class GeminiCompletionService(
 
         if (string.IsNullOrWhiteSpace(text))
         {
-            throw new InvalidOperationException(
-                "Gemini no devolvió contenido en la respuesta. Verificá el modelo configurado y los límites del plan gratuito.");
+            throw new LlmServiceException(LlmErrorMessages.EmptyResponse);
         }
 
         return text;
@@ -98,9 +92,6 @@ public sealed class GeminiCompletionService(
         Environment.GetEnvironmentVariable("Gemini__ApiKey")
         ?? configuration[$"{GeminiOptions.SectionName}:ApiKey"]
         ?? options.Value.ApiKey;
-
-    private static string Truncate(string value, int maxLength) =>
-        value.Length <= maxLength ? value : value[..maxLength] + "…";
 
     private sealed record GeminiGenerateContentRequest(
         [property: JsonPropertyName("contents")] GeminiContent[] Contents,

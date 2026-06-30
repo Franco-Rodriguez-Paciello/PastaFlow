@@ -18,6 +18,7 @@ import {
 } from '../services/productoService';
 import { mapRecetaItemsToSeleccionados, type IngredienteSeleccionado } from '../lib/recetaMappers';
 import { ApiError } from '../lib/apiError';
+import { formatRecetaAsistenteError } from '../lib/recetaAsistenteErrors';
 
 export type RecetaModo = 'existente' | 'nuevo';
 
@@ -358,12 +359,7 @@ export const useRecetasStore = create<RecetasStore>((set, get) => ({
       });
       set({ sugerencia: resultado, asistenteRefinamiento: '' });
     } catch (err) {
-      const message = err instanceof ApiError
-        ? (err.detail ?? err.message)
-        : err instanceof Error
-          ? err.message
-          : 'Error al generar la sugerencia.';
-      set({ sugerenciaError: message });
+      set({ sugerenciaError: formatRecetaAsistenteError(err) });
     } finally {
       set({ sugerenciaLoading: false });
     }
@@ -410,12 +406,7 @@ export const useRecetasStore = create<RecetasStore>((set, get) => ({
       });
       set({ sugerencia: resultado, asistenteRefinamiento: '' });
     } catch (err) {
-      const message = err instanceof ApiError
-        ? (err.detail ?? err.message)
-        : err instanceof Error
-          ? err.message
-          : 'Error al refinar la sugerencia.';
-      set({ sugerenciaError: message });
+      set({ sugerenciaError: formatRecetaAsistenteError(err) });
     } finally {
       set({ sugerenciaLoading: false });
     }

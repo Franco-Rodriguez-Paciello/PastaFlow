@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Sparkles, Loader2, X, AlertTriangle, CheckCircle2, Plus, Wand2 } from 'lucide-react';
 import type { IngredientePropuestoSugeridoDto } from '../../types/api.types';
 import { useRecetasStore } from '../../stores/useRecetasStore';
+import RecetaAsistenteLoadingBanner from './RecetaAsistenteLoadingBanner';
 
 const UNIDADES = ['Kilogramo', 'Litro', 'Unidad', 'Docena'] as const;
 
@@ -94,6 +95,16 @@ export default function RecetaAsistentePanel() {
           </button>
         )}
       </div>
+
+      {sugerenciaLoading && (
+        <RecetaAsistenteLoadingBanner
+          mensaje={
+            sugerencia
+              ? 'Aplicando ajuste con IA…'
+              : 'Generando sugerencia de receta…'
+          }
+        />
+      )}
 
       {!sugerencia ? (
         <div className="space-y-4">

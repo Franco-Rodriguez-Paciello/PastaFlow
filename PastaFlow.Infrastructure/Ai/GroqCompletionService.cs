@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using PastaFlow.Application.Exceptions;
 using PastaFlow.Application.Interfaces;
 
 namespace PastaFlow.Infrastructure.Ai;
@@ -24,30 +25,50 @@ public sealed class GroqCompletionService(
         string apiKey = ResolveApiKey();
         if (string.IsNullOrWhiteSpace(apiKey))
         {
-            throw new InvalidOperationException(
-                "La API key de Groq no está configurada. Definí Groq__ApiKey como variable de entorno " +
-                "o agregá la clave en la sección Groq del appsettings (solo desarrollo). " +
-                "Obtené una gratis en https://console.groq.com");
+            throw new LlmServiceException(
+                LlmErrorMessages.MissingApiKey("Groq"),
+                isTransient: false);
         }
 
-        using var request = new HttpRequestMessage(HttpMethod.Post, "openai/v1/chat/completions");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
-        request.Content = JsonContent.Create(new GroqChatRequest(
+        var requestBody = new GroqChatRequest(
             options.Value.Model,
             [
                 new GroqMessage("system", systemPrompt),
                 new GroqMessage("user", userPrompt)
-            ]));
+            ]);
 
-        using HttpResponseMessage response = await httpClient.SendAsync(request, cancellationToken);
-
-        if (!response.IsSuccessStatusCode)
+        for (int attempt = 1; attempt <= LlmHttpRetry.MaxAttemptsCount; attempt++)
         {
-            string errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException(
-                $"Groq respondió con error {(int)response.StatusCode}: {Truncate(errorBody, 300)}");
+            using var request = new HttpRequestMessage(HttpMethod.Post, "openai/v1/chat/completions");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+            request.Content = JsonContent.Create(requestBody);
+
+            using HttpResponseMessage response = await httpClient.SendAsync(request, cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await ParseSuccessResponseAsync(response, cancellationToken);
+            }
+
+            int statusCode = (int)response.StatusCode;
+
+            if (attempt < LlmHttpRetry.MaxAttemptsCount && LlmHttpRetry.IsTransient(statusCode))
+            {
+                TimeSpan delay = LlmHttpRetry.GetDelayBeforeAttempt(attempt);
+                await Task.Delay(delay, cancellationToken);
+                continue;
+            }
+
+            throw new LlmServiceException(LlmErrorMessages.ProviderError("Groq", statusCode));
         }
 
+        throw new LlmServiceException(LlmErrorMessages.TemporarilyUnavailable);
+    }
+
+    private static async Task<string> ParseSuccessResponseAsync(
+        HttpResponseMessage response,
+        CancellationToken cancellationToken)
+    {
         GroqChatResponse? result = await response.Content
             .ReadFromJsonAsync<GroqChatResponse>(cancellationToken);
 
@@ -58,8 +79,7 @@ public sealed class GroqCompletionService(
 
         if (string.IsNullOrWhiteSpace(text))
         {
-            throw new InvalidOperationException(
-                "Groq no devolvió contenido en la respuesta. Verificá el modelo configurado y los límites del plan gratuito.");
+            throw new LlmServiceException(LlmErrorMessages.EmptyResponse);
         }
 
         return text;
@@ -69,9 +89,6 @@ public sealed class GroqCompletionService(
         Environment.GetEnvironmentVariable("Groq__ApiKey")
         ?? configuration[$"{GroqOptions.SectionName}:ApiKey"]
         ?? options.Value.ApiKey;
-
-    private static string Truncate(string value, int maxLength) =>
-        value.Length <= maxLength ? value : value[..maxLength] + "…";
 
     private sealed record GroqChatRequest(
         [property: JsonPropertyName("model")] string Model,
