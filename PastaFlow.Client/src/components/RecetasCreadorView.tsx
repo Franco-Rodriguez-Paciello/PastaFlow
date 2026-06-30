@@ -11,6 +11,9 @@ import RecetaAsistentePanel from './recetas/RecetaAsistentePanel';
 import InsumosDisponiblesPanel from './recetas/InsumosDisponiblesPanel';
 import RecetaBorradorPanel from './recetas/RecetaBorradorPanel';
 import RecetaSaveBar from './recetas/RecetaSaveBar';
+import PageHeader from './common/PageHeader';
+import LoadingState from './common/LoadingState';
+import ErrorState from './common/ErrorState';
 
 export default function RecetasCreadorView() {
   const store = useRecetasStore();
@@ -61,24 +64,39 @@ export default function RecetasCreadorView() {
     [saving, loadingReceta, ingredientesSeleccionados, modo, productoId, nuevoForm],
   );
 
+  const header = (
+    <PageHeader
+      title="Creador de recetas"
+      subtitle="Definí la receta de un producto y calculá su costo en base a los insumos."
+    />
+  );
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+      <div className="space-y-6">
+        {header}
+        <LoadingState label="Cargando insumos y recetas…" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-6 text-red-600 font-medium bg-red-50 border border-red-200 rounded-lg">
-        {error}
+      <div className="space-y-6">
+        {header}
+        <ErrorState
+          title="No pudimos cargar el creador de recetas"
+          message={error}
+          onRetry={() => void init()}
+          retrying={loading}
+        />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      {header}
       <RecetaAsistentePanel />
       <RecetaFormCabecera />
 

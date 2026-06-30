@@ -8,6 +8,7 @@ import {
 import CatalogoPanel from './ventas/CatalogoPanel';
 import TicketPanel from './ventas/TicketPanel';
 import VentaSuccessToast from './ventas/VentaSuccessToast';
+import PageHeader from './common/PageHeader';
 
 export default function VentasView() {
   const {
@@ -45,7 +46,10 @@ export default function VentasView() {
   const cartProductIds = useMemo(() => selectCartProductIds(cart), [cart]);
 
   return (
-    <div className="flex gap-6 items-start">
+    <div className="space-y-6">
+      <PageHeader title="Punto de venta" subtitle="Registrá ventas de mostrador y cobrá el ticket." />
+
+      <div className="flex gap-6 items-start">
       <CatalogoPanel
         search={search}
         loading={loading}
@@ -54,6 +58,7 @@ export default function VentasView() {
         cartProductIds={cartProductIds}
         onSearchChange={setSearch}
         onAddToCart={addToCart}
+        onRetry={() => void fetchProductos()}
       />
 
       <TicketPanel
@@ -75,6 +80,7 @@ export default function VentasView() {
       {successMessage && (
         <VentaSuccessToast message={successMessage} onDismiss={dismissSuccessMessage} />
       )}
+      </div>
     </div>
   );
 }

@@ -93,7 +93,7 @@ export default function LoginView() {
                 autoComplete="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="admin"
+                placeholder="Tu usuario"
                 disabled={loading}
                 className="w-full bg-gray-700/60 border border-gray-600/50 text-white placeholder-gray-500 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:opacity-50"
               />

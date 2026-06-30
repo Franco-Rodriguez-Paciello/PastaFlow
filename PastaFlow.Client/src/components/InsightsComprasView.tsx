@@ -4,6 +4,8 @@ import { useInsightsComprasStore } from '../stores/useInsightsComprasStore';
 import InsightsFiltrosBar from './insights/InsightsFiltrosBar';
 import InsightsTabla from './insights/InsightsTabla';
 import InsightDetalleModal from './insights/InsightDetalleModal';
+import PageHeader from './common/PageHeader';
+import LoadingState from './common/LoadingState';
 
 export default function InsightsComprasView() {
   const {
@@ -20,18 +22,13 @@ export default function InsightsComprasView() {
   }, [init]);
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center gap-3">
-        <span className="bg-amber-50 text-amber-600 p-2.5 rounded-lg">
-          <Sparkles size={22} strokeWidth={1.8} />
-        </span>
-        <div>
-          <h2 className="text-2xl font-semibold text-gray-800">Insights de Compras</h2>
-          <p className="text-sm text-gray-400 mt-0.5">
-            Historial completo, filtros y eliminación de informes archivados.
-          </p>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Insights de compras"
+        subtitle="Historial completo, filtros y eliminación de informes archivados."
+        icon={<Sparkles size={22} strokeWidth={1.8} />}
+        iconClassName="bg-amber-50 text-amber-600"
+      />
 
       <InsightsFiltrosBar />
 
@@ -54,9 +51,7 @@ export default function InsightsComprasView() {
       )}
 
       {loading ? (
-        <div className="flex items-center justify-center h-48">
-          <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
-        </div>
+        <LoadingState label="Cargando informes…" />
       ) : (
         <InsightsTabla />
       )}

@@ -8,6 +8,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 } from 'recharts';
 import { usePlanificacionStore } from '../stores/usePlanificacionStore';
+import PageHeader from './common/PageHeader';
 import type { ClimaPronosticoDto } from '../types/api.types';
 
 function formatFechaLarga(iso: string): string {
@@ -51,12 +52,10 @@ export default function PlanificacionView() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-800">Planificación de Producción</h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Predicción de demanda por calendario y clima real, aprendida del histórico de ventas. Estimación, no certeza.
-        </p>
-      </div>
+      <PageHeader
+        title="Planificación de producción"
+        subtitle="Estimación de demanda para decidir cuánto producir, según el histórico de ventas, el día de la semana y el pronóstico del clima."
+      />
 
       {/* Controles */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
@@ -175,8 +174,8 @@ export default function PlanificacionView() {
                   <p className="text-3xl font-bold text-emerald-600 tabular-nums mt-2">
                     {backtest.precision}%
                   </p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Error medio {backtest.mape}% · {backtest.diasEvaluados} días de prueba
+                  <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                    En las últimas {backtest.diasEvaluados} jornadas, la estimación se acercó en promedio a lo realmente vendido con este nivel de acierto.
                   </p>
                 </>
               ) : (
@@ -246,7 +245,7 @@ export default function PlanificacionView() {
               </span>
               <div className="flex-1">
                 <h3 className="text-sm font-semibold text-gray-800">Recomendación con IA</h3>
-                <p className="text-xs text-gray-400">La IA redacta sobre los números y el clima calculados arriba.</p>
+                <p className="text-xs text-gray-400">Un resumen accionable de cuánto conviene producir y por qué.</p>
               </div>
               <button
                 type="button"

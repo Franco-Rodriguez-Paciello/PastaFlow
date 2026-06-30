@@ -8,21 +8,28 @@ import StockCriticoPanel from './dashboard/StockCriticoPanel';
 import ProduccionRecientePanel from './dashboard/ProduccionRecientePanel';
 import DashboardFinancialSection from './dashboard/DashboardFinancialSection';
 import ComprasInsightPanel from './dashboard/ComprasInsightPanel';
+import ErrorState from './common/ErrorState';
+import PageHeader from './common/PageHeader';
 
 interface DashboardViewProps {
   onNavigate?: (view: string) => void;
 }
 
 export default function DashboardView({ onNavigate }: DashboardViewProps) {
-  const { stats, statsLoading, statsError, init } = useDashboardStore();
+  const { stats, statsLoading, statsError, fetchStats, init } = useDashboardStore();
 
   useEffect(() => {
     void init();
   }, [init]);
 
+  const header = (
+    <PageHeader title="Panel principal" subtitle="Resumen operativo y financiero del día" />
+  );
+
   if (statsLoading) {
     return (
       <div className="flex flex-col gap-6">
+        {header}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <SkeletonCard />
           <SkeletonCard />
@@ -38,8 +45,15 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
 
   if (statsError) {
     return (
-      <div className="flex items-center justify-center min-h-64 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm font-medium">
-        Error al cargar el dashboard: {statsError}
+      <div className="flex flex-col gap-6">
+        {header}
+        <ErrorState
+          title="No pudimos cargar el panel"
+          message={statsError}
+          onRetry={() => void fetchStats()}
+          retrying={statsLoading}
+          className="min-h-64"
+        />
       </div>
     );
   }
@@ -50,6 +64,7 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
 
   return (
     <div className="flex flex-col gap-6">
+      {header}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <MetricCard
           title="Valorización de Insumos"

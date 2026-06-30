@@ -160,6 +160,7 @@ try
         {
             var db = scope.ServiceProvider.GetRequiredService<PastaFlowDbContext>();
             await db.Database.MigrateAsync();
+            await UsuarioDataSeeder.SeedAsync(db);
             await ProveedorDataSeeder.SeedAsync(db);
             bool regenerarVentas = builder.Configuration.GetValue<bool>("Seeding:RegenerarVentasHistoricas");
             await VentasHistoricasSeeder.SeedAsync(db, regenerarVentas);

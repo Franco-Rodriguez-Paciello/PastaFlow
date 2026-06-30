@@ -3,9 +3,10 @@ import { useDashboardStore } from '../../stores/useDashboardStore';
 import { formatCurrency } from '../../lib/formatters';
 import FinancialCard from './FinancialCard';
 import Top5ProductosPanel from './Top5ProductosPanel';
+import ErrorState from '../common/ErrorState';
 
 export default function DashboardFinancialSection() {
-  const { financial, financialLoading, financialError } = useDashboardStore();
+  const { financial, financialLoading, financialError, fetchFinancial } = useDashboardStore();
 
   if (financialLoading) {
     return (
@@ -22,9 +23,12 @@ export default function DashboardFinancialSection() {
 
   if (financialError || !financial) {
     return (
-      <div className="rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm p-4">
-        No se pudieron cargar los datos financieros: {financialError}
-      </div>
+      <ErrorState
+        title="No pudimos cargar la caja del día"
+        message={financialError}
+        onRetry={() => void fetchFinancial()}
+        retrying={financialLoading}
+      />
     );
   }
 

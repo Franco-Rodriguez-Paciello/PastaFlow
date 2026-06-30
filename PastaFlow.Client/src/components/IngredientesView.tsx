@@ -5,6 +5,9 @@ import IngredientesAlerts from './ingredientes/IngredientesAlerts';
 import AjusteModal from './ingredientes/AjusteModal';
 import IngredientesTabla from './ingredientes/IngredientesTabla';
 import HistorialAjustesPanel from './ingredientes/HistorialAjustesPanel';
+import PageHeader from './common/PageHeader';
+import LoadingState from './common/LoadingState';
+import ErrorState from './common/ErrorState';
 
 interface Props {
   onCostoActualizado?: () => void;
@@ -13,6 +16,8 @@ interface Props {
 export default function IngredientesView({ onCostoActualizado }: Props) {
   const {
     loading,
+    error,
+    ingredientes,
     ajusteModalOpen,
     fetchIngredientes,
     fetchHistorial,
@@ -24,26 +29,48 @@ export default function IngredientesView({ onCostoActualizado }: Props) {
     void fetchHistorial();
   }, [fetchIngredientes, fetchHistorial]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-semibold text-gray-800">Insumos</h2>
+  const header = (
+    <PageHeader
+      title="Insumos"
+      subtitle="Gestioná stock, costos y umbrales de los insumos."
+      actions={
         <button
           onClick={openAjusteModal}
           className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-slate-700 text-white rounded-lg hover:bg-slate-800 transition-colors shadow-sm"
         >
           <IconWrench />
-          Registrar Merma / Ajuste
+          Registrar merma / ajuste
         </button>
+      }
+    />
+  );
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        {header}
+        <LoadingState label="Cargando insumos…" />
       </div>
+    );
+  }
+
+  if (error && ingredientes.length === 0) {
+    return (
+      <div className="space-y-6">
+        {header}
+        <ErrorState
+          title="No pudimos cargar los insumos"
+          message={error}
+          onRetry={() => void fetchIngredientes()}
+          retrying={loading}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {header}
 
       {ajusteModalOpen && <AjusteModal />}
 

@@ -1,5 +1,6 @@
 import type { ProductoDto } from '../../types/api.types';
 import ProductoCard from './ProductoCard';
+import ErrorState from '../common/ErrorState';
 
 interface CatalogoPanelProps {
   search: string;
@@ -9,6 +10,7 @@ interface CatalogoPanelProps {
   cartProductIds: Set<number>;
   onSearchChange: (value: string) => void;
   onAddToCart: (producto: ProductoDto) => void;
+  onRetry?: () => void;
 }
 
 export default function CatalogoPanel({
@@ -19,6 +21,7 @@ export default function CatalogoPanel({
   cartProductIds,
   onSearchChange,
   onAddToCart,
+  onRetry,
 }: CatalogoPanelProps) {
   return (
     <div className="flex-1 min-w-0 flex flex-col gap-4">
@@ -44,9 +47,12 @@ export default function CatalogoPanel({
           ))}
         </div>
       ) : loadError ? (
-        <div className="rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm p-4">
-          {loadError}
-        </div>
+        <ErrorState
+          title="No pudimos cargar el catálogo"
+          message={loadError}
+          onRetry={onRetry}
+          retrying={loading}
+        />
       ) : productos.length === 0 ? (
         <div className="text-center py-16 text-gray-400 text-sm">
           No se encontraron productos para "<span className="font-medium text-gray-600">{search}</span>".

@@ -59,7 +59,7 @@ function ForbiddenToast({ visible }: { visible: boolean }) {
     >
       <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" aria-hidden="true" />
       <p className="leading-relaxed">
-        Acceso denegado. No tienes los permisos requeridos para realizar esta acción.
+        Acceso denegado. No tenés los permisos necesarios para realizar esta acción.
       </p>
     </div>
   );
@@ -125,19 +125,9 @@ function App() {
           <AccessDenied onRedirect={() => setView('produccion')} />
         ) : (
           <>
-            {view === 'dashboard' && (
-              <div>
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">Panel Principal</h2>
-                <DashboardView onNavigate={setView} />
-              </div>
-            )}
+            {view === 'dashboard' && <DashboardView onNavigate={setView} />}
 
-            {view === 'insumos' && (
-              <div>
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">Gestión de Insumos</h2>
-                <IngredientesView />
-              </div>
-            )}
+            {view === 'insumos' && <IngredientesView />}
 
             {view === 'proveedores' && <ProveedoresView />}
 
@@ -149,40 +139,15 @@ function App() {
               </Suspense>
             )}
 
-            {view === 'rentabilidad' && (
-              <div>
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">Panel Analítico</h2>
-                <ProductosAnaliticaView />
-              </div>
-            )}
+            {view === 'rentabilidad' && <ProductosAnaliticaView />}
 
-            {view === 'recetas' && (
-              <div>
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">Creador de Recetas Dinámico</h2>
-                <RecetasCreadorView />
-              </div>
-            )}
+            {view === 'recetas' && <RecetasCreadorView />}
 
-            {view === 'produccion' && (
-              <div>
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">Producción Diaria</h2>
-                <ProduccionDiariaView />
-              </div>
-            )}
+            {view === 'produccion' && <ProduccionDiariaView />}
 
-            {view === 'ventas' && (
-              <div>
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">Punto de Venta</h2>
-                <VentasView />
-              </div>
-            )}
+            {view === 'ventas' && <VentasView />}
 
-            {view === 'historial' && (
-              <div>
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">Historial de Producción</h2>
-                <HistorialProduccionView />
-              </div>
-            )}
+            {view === 'historial' && <HistorialProduccionView />}
           </>
         )}
       </main>

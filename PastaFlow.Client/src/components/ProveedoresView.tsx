@@ -4,6 +4,8 @@ import { useProveedoresStore } from '../stores/useProveedoresStore';
 import ProveedoresTabla from './proveedores/ProveedoresTabla';
 import ProveedorModal from './proveedores/ProveedorModal';
 import VincularIngredienteModal from './proveedores/VincularIngredienteModal';
+import PageHeader from './common/PageHeader';
+import LoadingState from './common/LoadingState';
 
 export default function ProveedoresView() {
   const {
@@ -21,28 +23,13 @@ export default function ProveedoresView() {
     void init();
   }, [init]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <span className="bg-emerald-50 text-emerald-600 p-2.5 rounded-lg">
-            <Truck size={22} strokeWidth={1.8} />
-          </span>
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-800">Proveedores</h2>
-            <p className="text-sm text-gray-400 mt-0.5">
-              Gestioná contactos y vínculos de insumos por proveedor.
-            </p>
-          </div>
-        </div>
+  const header = (
+    <PageHeader
+      title="Proveedores"
+      subtitle="Gestioná contactos y vínculos de insumos por proveedor."
+      icon={<Truck size={22} strokeWidth={1.8} />}
+      iconClassName="bg-emerald-50 text-emerald-600"
+      actions={
         <button
           type="button"
           onClick={openCreateModal}
@@ -51,7 +38,22 @@ export default function ProveedoresView() {
           <Plus size={16} />
           Nuevo proveedor
         </button>
+      }
+    />
+  );
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        {header}
+        <LoadingState label="Cargando proveedores…" />
       </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {header}
 
       {error && (
         <div className="mb-4 flex items-start justify-between gap-3 rounded-lg bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-700">
