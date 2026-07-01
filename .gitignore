@@ -8,6 +8,7 @@
 [Oo]ut/
 [Ll]og/
 [Ll]ogs/
+.build-check/
 
 # ------ Archivos de usuario y configuración local de IDEs ------
 *.user

@@ -10,11 +10,13 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard',             view: 'dashboard',   icon: '🏠', adminOnly: true  },
   { label: 'Insumos',               view: 'insumos',     icon: '🧂', adminOnly: true  },
+  { label: 'Ingreso mercadería',    view: 'compras',     icon: '📦', adminOnly: true  },
   { label: 'Proveedores',           view: 'proveedores', icon: '🚚', adminOnly: true  },
   { label: 'Insights de Compras',   view: 'insights-compras', icon: '✨', adminOnly: true  },
   { label: 'Planificación',         view: 'planificacion', icon: '📈', adminOnly: true  },
   { label: 'Rentabilidad',          view: 'rentabilidad',icon: '📊', adminOnly: true  },
   { label: 'Creador de Recetas',    view: 'recetas',     icon: '📋', adminOnly: true  },
+  { label: 'Hoja de Producción',    view: 'hoja-produccion', icon: '📄'                   },
   { label: 'Producción Diaria',     view: 'produccion',  icon: '🏭'                   },
   { label: 'Punto de Venta',        view: 'ventas',      icon: '🛒'                   },
   { label: 'Historial de Producción', view: 'historial', icon: '📜', adminOnly: true  },

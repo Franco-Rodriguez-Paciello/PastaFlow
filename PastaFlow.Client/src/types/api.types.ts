@@ -188,6 +188,99 @@ export interface BacktestDemandaDto {
   serie: PuntoBacktestDto[];
 }
 
+// ─── Hoja de producción del día ───────────────────────────────────────────────
+
+export interface HojaProduccionLineaDto {
+  productoId: number;
+  nombre: string;
+  cantidadPredicha: number;
+  stockTerminadoActual: number;
+  cantidadProducidaHoy: number;
+  cantidadFaltaProducir: number;
+  esCompuesto: boolean;
+  tieneReceta: boolean;
+  stockInsumosSuficiente: boolean;
+  costoEstimado: number | null;
+  margenEstimado: number | null;
+  detalleInsumos: DetalleCostoIngredienteDto[];
+}
+
+export interface InsumoAgregadoHojaDto {
+  ingredienteId: number;
+  nombre: string;
+  cantidadRequeridaTotal: number;
+  stockDisponible: number;
+  faltante: number;
+  suficiente: boolean;
+}
+
+export interface HojaProduccionDiaDto {
+  fechaObjetivo: string;
+  esFinDeSemana: boolean;
+  esDia29: boolean;
+  clima: ClimaPronosticoDto;
+  totalPredicho: number;
+  totalFaltaProducir: number;
+  lineasConFalta: number;
+  lineasStockOk: number;
+  puedeProducirTodo: boolean;
+  lineas: HojaProduccionLineaDto[];
+  insumosAgregados: InsumoAgregadoHojaDto[];
+}
+
+// ─── Compras / Ingreso de mercadería ──────────────────────────────────────────
+
+export interface CompraLineaDto {
+  ingredienteId: number;
+  nombreIngrediente: string;
+  unidadMedida: string;
+  cantidad: number;
+  precioUnitario: number;
+  subtotal: number;
+}
+
+export interface CompraResumenDto {
+  id: number;
+  fechaIngreso: string;
+  proveedorNombre: string | null;
+  numeroFactura: string | null;
+  cantidadLineas: number;
+  total: number;
+}
+
+export interface CompraDetalleDto {
+  id: number;
+  fechaIngreso: string;
+  proveedorId: number | null;
+  proveedorNombre: string | null;
+  numeroFactura: string | null;
+  observaciones: string | null;
+  total: number;
+  lineas: CompraLineaDto[];
+}
+
+export interface SugerenciaCompraDto {
+  ingredienteId: number;
+  nombre: string;
+  unidadMedida: string;
+  stockActual: number;
+  cantidadSugerida: number;
+  precioReferencia: number | null;
+  motivo: 'FaltanteProduccion' | 'StockCritico';
+}
+
+export interface RegistrarCompraInput {
+  proveedorId?: number | null;
+  numeroFactura?: string | null;
+  observaciones?: string | null;
+  actualizarCosto: boolean;
+  lineas: {
+    ingredienteId: number;
+    cantidad: number;
+    precioUnitario: number;
+  }[];
+}
+
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
 export interface StockCriticoItemDto {

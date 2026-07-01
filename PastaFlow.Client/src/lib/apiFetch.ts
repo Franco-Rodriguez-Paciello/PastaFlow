@@ -14,6 +14,16 @@ import { ForbiddenError, parseApiError } from './apiError';
 
 const TOKEN_KEY = 'pf_token';
 
+/** Thrown when the browser cannot reach the API (connection refused, network down, etc.). */
+export class NetworkError extends Error {
+  constructor() {
+    super(
+      'No se pudo conectar con el servidor. Verificá que la API esté corriendo (dotnet run en PastaFlow.API o docker compose up).',
+    );
+    this.name = 'NetworkError';
+  }
+}
+
 export async function apiFetch(
   input: RequestInfo | URL,
   init: RequestInit = {},
@@ -27,7 +37,15 @@ export async function apiFetch(
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  const response = await fetch(input, { ...init, headers });
+  let response: Response;
+  try {
+    response = await fetch(input, { ...init, headers });
+  } catch (err) {
+    if (err instanceof TypeError) {
+      throw new NetworkError();
+    }
+    throw err;
+  }
 
   if (response.status === 401) {
     window.dispatchEvent(new CustomEvent('auth:logout'));

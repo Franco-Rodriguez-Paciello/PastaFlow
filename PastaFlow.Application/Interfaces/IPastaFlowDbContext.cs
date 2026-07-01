@@ -18,6 +18,8 @@ public interface IPastaFlowDbContext
     DbSet<InformeComprasInsight> InformesComprasInsight { get; }
     DbSet<Proveedor> Proveedores { get; }
     DbSet<ProveedorIngrediente> ProveedorIngredientes { get; }
+    DbSet<Compra> Compras { get; }
+    DbSet<CompraLinea> CompraLineas { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);

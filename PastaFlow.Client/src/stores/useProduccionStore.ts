@@ -66,6 +66,7 @@ interface ProduccionStore {
   confirmarProduccion: (dto: OrdenProduccionInput) => Promise<void>;
 
   setFormField: (name: keyof ProduccionFormState, value: string) => void;
+  prefillForm: (productoId: number, cantidad: number) => void;
   invalidatePreview: () => void;
   dismissConcurrencyError: () => void;
   dismissDomainError: () => void;
@@ -228,6 +229,24 @@ export const useProduccionStore = create<ProduccionStore>((set, get) => ({
           )
         : state.fieldErrors,
     }));
+  },
+
+  prefillForm: (productoId, cantidad) => {
+    set({
+      form: {
+        productoId: String(productoId),
+        cantidad: String(cantidad),
+      },
+      preview: null,
+      insumosTrasProduccion: null,
+      verifyError: null,
+      domainError: null,
+      submitError: null,
+      errorFeedback: null,
+      concurrencyError: false,
+      fieldErrors: {},
+      successMessage: null,
+    });
   },
 
   invalidatePreview: () => {

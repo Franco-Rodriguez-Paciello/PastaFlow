@@ -7,6 +7,8 @@ import ProductosAnaliticaView from './components/ProductosAnaliticaView';
 import SideBar from './components/SideBar';
 import RecetasCreadorView from './components/RecetasCreadorView';
 import ProduccionDiariaView from './components/ProduccionDiariaView';
+import HojaProduccionView from './components/HojaProduccionView';
+import ComprasView from './components/ComprasView';
 import HistorialProduccionView from './components/HistorialProduccionView';
 import VentasView from './components/VentasView';
 import ProveedoresView from './components/ProveedoresView';
@@ -14,9 +16,11 @@ import InsightsComprasView from './components/InsightsComprasView';
 // Carga diferida: recharts (gráficos) solo se descarga al abrir esta vista.
 const PlanificacionView = lazy(() => import('./components/PlanificacionView'));
 import { useAuth } from './context/AuthContext';
+import { useHojaProduccionStore } from './stores/useHojaProduccionStore';
+import { useComprasStore } from './stores/useComprasStore';
 
 // Vistas que solo puede ver un Admin
-const ADMIN_ONLY_VIEWS = new Set(['dashboard', 'insumos', 'proveedores', 'insights-compras', 'planificacion', 'rentabilidad', 'recetas', 'historial']);
+const ADMIN_ONLY_VIEWS = new Set(['dashboard', 'insumos', 'proveedores', 'insights-compras', 'planificacion', 'rentabilidad', 'recetas', 'historial', 'compras']);
 
 function ViewLoader() {
   return (
@@ -42,7 +46,7 @@ function AccessDenied({ onRedirect }: { onRedirect: () => void }) {
         onClick={onRedirect}
         className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-md"
       >
-        🏭 Ir a Producción Diaria
+        🏭 Ir a Hoja de Producción
       </button>
     </div>
   );
@@ -72,8 +76,8 @@ function App() {
   const [forbiddenToastVisible, setForbiddenToastVisible] = useState(false);
   const forbiddenToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Operario arranca en producción; Admin en dashboard
-  const [view, setView] = useState<string>(() => (isAdmin ? 'dashboard' : 'produccion'));
+  // Operario arranca en hoja de producción; Admin en dashboard
+  const [view, setView] = useState<string>(() => (isAdmin ? 'dashboard' : 'hoja-produccion'));
 
   useEffect(() => {
     const showForbiddenToast = () => {
@@ -95,7 +99,7 @@ function App() {
   // Si el rol cambia (re-login con otro usuario), resetear la vista
   useEffect(() => {
     if (!isAdmin && ADMIN_ONLY_VIEWS.has(view)) {
-      setView('produccion');
+      setView('hoja-produccion');
     }
   }, [isAdmin, view]);
 
@@ -122,7 +126,7 @@ function App() {
       {/* Contenedor Principal Dinámico */}
       <main className="flex-1 p-8 overflow-y-auto">
         {viewBlocked ? (
-          <AccessDenied onRedirect={() => setView('produccion')} />
+          <AccessDenied onRedirect={() => setView('hoja-produccion')} />
         ) : (
           <>
             {view === 'dashboard' && <DashboardView onNavigate={setView} />}
@@ -140,6 +144,21 @@ function App() {
             )}
 
             {view === 'rentabilidad' && <ProductosAnaliticaView />}
+
+            {view === 'hoja-produccion' && (
+              <HojaProduccionView
+                onRegistrarCompras={() => {
+                  const { hoja, fecha } = useHojaProduccionStore.getState();
+                  void useComprasStore.getState().abrirRegistroDesdeHoja(
+                    hoja?.insumosAgregados ?? [],
+                    fecha,
+                  );
+                  setView('compras');
+                }}
+              />
+            )}
+
+            {view === 'compras' && <ComprasView />}
 
             {view === 'recetas' && <RecetasCreadorView />}
 

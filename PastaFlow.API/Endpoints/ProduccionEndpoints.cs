@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using PastaFlow.API.Middleware;
 using PastaFlow.Application.Commands.Produccion;
 using PastaFlow.Application.DTOs;
+using PastaFlow.Application.Queries.HojaProduccion;
 using PastaFlow.Application.Queries.Produccion;
 
 namespace PastaFlow.API.Endpoints;
@@ -27,6 +28,21 @@ public static class ProduccionEndpoints
         .WithSummary("Retorna el historial de producciones con filtros opcionales por producto y rango de fechas")
         .Produces<IReadOnlyCollection<HistorialProduccionDto>>(StatusCodes.Status200OK)
         .Produces<object>(StatusCodes.Status400BadRequest);
+
+        group.MapGet("/hoja", async (
+            [FromQuery] DateOnly? fecha,
+            GetHojaProduccionDiaQueryHandler handler,
+            CancellationToken ct) =>
+        {
+            DateOnly objetivo = fecha ?? DateOnly.FromDateTime(DateTime.UtcNow).AddDays(1);
+            HojaProduccionDiaDto hoja = await handler.HandleAsync(
+                new GetHojaProduccionDiaQuery(objetivo),
+                ct);
+            return Results.Ok(hoja);
+        })
+        .WithName("GetHojaProduccionDia")
+        .WithSummary("Hoja de producción del día: predicción de demanda + stock terminado + insumos necesarios")
+        .Produces<HojaProduccionDiaDto>(StatusCodes.Status200OK);
 
         group.MapPost("/", async (
             [FromBody] RegistrarProduccionCommand command,

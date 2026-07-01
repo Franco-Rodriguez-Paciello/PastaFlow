@@ -6,6 +6,7 @@ using Serilog;
 using System.Security.Claims;
 using PastaFlow.API.Endpoints;
 using PastaFlow.API.Middleware;
+using PastaFlow.Application.Commands.Compras;
 using PastaFlow.Application.Commands.Dashboard;
 using PastaFlow.Application.Commands.Ingredientes;
 using PastaFlow.Application.Commands.Produccion;
@@ -19,6 +20,8 @@ using PastaFlow.Application.Queries.Dashboard;
 using PastaFlow.Application.Services;
 using PastaFlow.Infrastructure.Ai;
 using PastaFlow.Infrastructure.Clima;
+using PastaFlow.Application.Queries.Compras;
+using PastaFlow.Application.Queries.HojaProduccion;
 using PastaFlow.Application.Queries.Ingredientes;
 using PastaFlow.Application.Queries.Planificacion;
 using PastaFlow.Application.Queries.Produccion;
@@ -165,6 +168,11 @@ try
     builder.Services.AddScoped<GetPrediccionDemandaQueryHandler>();
     builder.Services.AddScoped<GetSerieHistoricaDemandaQueryHandler>();
     builder.Services.AddScoped<GetBacktestDemandaQueryHandler>();
+    builder.Services.AddScoped<GetHojaProduccionDiaQueryHandler>();
+    builder.Services.AddScoped<GetComprasQueryHandler>();
+    builder.Services.AddScoped<GetCompraByIdQueryHandler>();
+    builder.Services.AddScoped<GetSugerenciasCompraQueryHandler>();
+    builder.Services.AddScoped<RegistrarCompraCommandHandler>();
     builder.Services.AddScoped<GenerarRecomendacionDemandaCommandHandler>();
 
     var app = builder.Build();
@@ -213,6 +221,7 @@ try
     app.MapProveedorEndpoints();
     app.MapProductoEndpoints();
     app.MapProduccionEndpoints();
+    app.MapCompraEndpoints();
     app.MapVentasEndpoints();
     app.MapDashboardEndpoints();
     app.MapPlanificacionEndpoints();

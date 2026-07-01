@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PastaFlow.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using PastaFlow.Infrastructure.Persistence;
 namespace PastaFlow.Infrastructure.Migrations
 {
     [DbContext(typeof(PastaFlowDbContext))]
-    partial class PastaFlowDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260701145330_AddComprasModule")]
+    partial class AddComprasModule
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
