@@ -26,11 +26,18 @@ RUN dotnet publish -c Release -o /app/publish \
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
 ENV ASPNETCORE_URLS=http://+:80
 ENV ASPNETCORE_ENVIRONMENT=Production
 
 EXPOSE 80
 
 COPY --from=build /app/publish .
+
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=60s \
+  CMD curl -f http://localhost:80/health || exit 1
 
 ENTRYPOINT ["dotnet", "PastaFlow.API.dll"]

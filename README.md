@@ -26,7 +26,7 @@ Proyecto full-stack pensado como producto real y como **portfolio técnico** (Cl
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
 - [Node.js](https://nodejs.org/) 20+
-- PostgreSQL 14+ (local o Docker)
+- PostgreSQL 14+ (desarrollo local) o Docker Compose (despliegue)
 
 ## Inicio rápido
 
@@ -101,6 +101,50 @@ Ideal para mostrar el proyecto a alguien que no lo conoce:
 
 **Tip:** Para ver el efecto “día 29 ñoquis”, planificá un 29 del mes. Para clima, elegí una fecha dentro de los próximos ~16 días (rango del pronóstico gratuito).
 
+## Despliegue con Docker
+
+Requisitos: [Docker](https://www.docker.com/) y Docker Compose v2.
+
+### 1. Configurar variables
+
+```bash
+cp .env.example .env
+```
+
+Editá `.env` — como mínimo `POSTGRES_PASSWORD` y `JWT_SECRET_KEY` (32+ caracteres). Para el primer arranque con usuarios iniciales, dejá `SEEDING_BOOTSTRAP_USERS=true`.
+
+### 2. Levantar el stack
+
+```bash
+docker compose up --build -d
+```
+
+| Servicio | Rol | Puerto |
+|----------|-----|--------|
+| `db` | PostgreSQL 16 | interno |
+| `api` | .NET API | interno |
+| `client` | nginx + React | **http://localhost:8080** |
+
+La API aplica migraciones al inicio. El frontend proxea `/api` hacia el backend (misma URL, sin CORS extra).
+
+### 3. Credenciales iniciales (primer deploy)
+
+Si `SEEDING_BOOTSTRAP_USERS=true` y no hay usuarios en la base:
+
+| Usuario | Contraseña | Rol |
+|---------|------------|-----|
+| `admin` | `admin123` | Admin |
+| `operario` | `operario123` | Operario |
+
+Cambiá estas contraseñas antes de exponer el sistema a internet. Luego poné `SEEDING_BOOTSTRAP_USERS=false`.
+
+### 4. Parar
+
+```bash
+docker compose down       # conserva datos
+docker compose down -v    # borra la base
+```
+
 ## Configuración
 
 ### IA (Gemini o Groq)
@@ -112,9 +156,14 @@ En `appsettings.Development.json` o variables de entorno:
 "Gemini": { "ApiKey": "...", "Model": "gemini-2.5-flash" }
 ```
 
-Variables de entorno (recomendado en producción): `Gemini__ApiKey`, `Groq__ApiKey`, `Jwt__SecretKey`.
+Variables de entorno (recomendado en producción): `Gemini__ApiKey`, `Groq__ApiKey`, `Jwt__SecretKey`, `ConnectionStrings__DefaultConnection`.
 
 Sin API key, las pantallas determinísticas (planificación sin botón IA, dashboard, producción) siguen funcionando.
+
+### Secretos locales
+
+- `appsettings.Development.json` no se commitea (`.gitignore`). Usá `appsettings.Development.example.json` como plantilla (incluye `Jwt.SecretKey` solo para dev).
+- Si el archivo ya estaba en git: `git rm --cached PastaFlow.API/appsettings.Development.json`
 
 ### Regenerar ventas históricas
 

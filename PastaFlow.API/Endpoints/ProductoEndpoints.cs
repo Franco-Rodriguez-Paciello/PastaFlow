@@ -33,6 +33,7 @@ public static class ProductoEndpoints
         })
         .WithName("RegistrarProducto")
         .WithSummary("Registra un nuevo producto")
+        .RequireAuthorization("AdminOnly")
         .Produces<object>(StatusCodes.Status201Created)
         .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
         .Produces<ProblemDetails>(StatusCodes.Status409Conflict);
@@ -77,6 +78,7 @@ public static class ProductoEndpoints
         })
         .WithName("AsignarReceta")
         .WithSummary("Asigna o reemplaza la receta (bill of materials) de un producto compuesto")
+        .RequireAuthorization("AdminOnly")
         .Produces(StatusCodes.Status204NoContent)
         .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
         .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
@@ -104,6 +106,7 @@ public static class ProductoEndpoints
         })
         .WithName("GetProductProfitability")
         .WithSummary("Retorna el costo total, precio de venta y margen de cada producto compuesto")
+        .RequireAuthorization("AdminOnly")
         .Produces<IReadOnlyCollection<ProductProfitabilityDto>>(StatusCodes.Status200OK);
 
         group.MapPost("/guardar-receta", async (
@@ -116,6 +119,7 @@ public static class ProductoEndpoints
         })
         .WithName("GuardarReceta")
         .WithSummary("Crea un producto nuevo o actualiza uno existente junto con su receta en una única transacción")
+        .RequireAuthorization("AdminOnly")
         .Produces<object>(StatusCodes.Status201Created)
         .Produces<object>(StatusCodes.Status400BadRequest)
         .Produces<object>(StatusCodes.Status404NotFound);

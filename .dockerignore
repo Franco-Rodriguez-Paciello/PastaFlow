@@ -1,0 +1,16 @@
+# Build context: raíz del repositorio (docker compose build api)
+
+**/bin/
+**/obj/
+**/node_modules/
+**/.git/
+**/.vs/
+**/.idea/
+**/dist/
+**/Logs/
+**/*.md
+.cursor/
+**/.env
+!**/.env.example
+**/appsettings.Development.json
+**/appsettings.Local.json

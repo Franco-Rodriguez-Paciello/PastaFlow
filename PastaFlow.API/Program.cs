@@ -109,6 +109,21 @@ try
     builder.Services.AddDbContext<PastaFlowDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+    builder.Services.AddHealthChecks()
+        .AddDbContextCheck<PastaFlowDbContext>("database");
+
+    string[] corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+    if (corsOrigins.Length > 0)
+    {
+        builder.Services.AddCors(options =>
+        {
+            options.AddDefaultPolicy(policy =>
+                policy.WithOrigins(corsOrigins)
+                    .AllowAnyHeader()
+                    .AllowAnyMethod());
+        });
+    }
+
     builder.Services.AddScoped<IPastaFlowDbContext, PastaFlowDbContext>();
 
     // Servicios de dominio
@@ -156,24 +171,42 @@ try
 
     if (app.Environment.IsDevelopment())
     {
-        using (var scope = app.Services.CreateScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<PastaFlowDbContext>();
-            await db.Database.MigrateAsync();
-            await UsuarioDataSeeder.SeedAsync(db);
-            await ProveedorDataSeeder.SeedAsync(db);
-            bool regenerarVentas = builder.Configuration.GetValue<bool>("Seeding:RegenerarVentasHistoricas");
-            await VentasHistoricasSeeder.SeedAsync(db, regenerarVentas);
-        }
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<PastaFlowDbContext>();
+        await db.Database.MigrateAsync();
+        await UsuarioDataSeeder.SeedAsync(db);
+        await ProveedorDataSeeder.SeedAsync(db);
+        bool regenerarVentas = builder.Configuration.GetValue<bool>("Seeding:RegenerarVentasHistoricas");
+        await VentasHistoricasSeeder.SeedAsync(db, regenerarVentas);
 
         app.MapOpenApi();
     }
+    else if (builder.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
+    {
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<PastaFlowDbContext>();
+        await db.Database.MigrateAsync();
+        Log.Information("Migraciones de base de datos aplicadas al inicio");
+
+        if (builder.Configuration.GetValue<bool>("Seeding:BootstrapUsers"))
+        {
+            await UsuarioDataSeeder.SeedAsync(db);
+            Log.Information("Bootstrap de usuarios ejecutado (si la tabla estaba vacía)");
+        }
+    }
 
     app.UseExceptionHandler();
-    app.UseHttpsRedirection();
+
+    if (builder.Configuration.GetValue<bool>("UseHttpsRedirection"))
+        app.UseHttpsRedirection();
+
+    if (corsOrigins.Length > 0)
+        app.UseCors();
 
     app.UseAuthentication();
     app.UseAuthorization();
+
+    app.MapHealthChecks("/health");
 
     app.MapAuthEndpoints();
     app.MapIngredienteEndpoints();

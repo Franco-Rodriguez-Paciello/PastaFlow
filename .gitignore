@@ -49,6 +49,7 @@ artifacts/
 *.ndf
 
 # ------ Secretos locales y configuración sensible ------
+appsettings.Development.json
 appsettings.Local.json
 appsettings.*.Local.json
 secrets.json
@@ -90,7 +91,6 @@ BenchmarkDotNet.Artifacts/
 StyleCop.Cache
 
 # ------ Docker ------
-.dockerignore
 docker-compose.override.yml
 
 # ------ Azure ------
