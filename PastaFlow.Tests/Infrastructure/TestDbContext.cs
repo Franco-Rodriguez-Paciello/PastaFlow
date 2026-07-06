@@ -26,6 +26,8 @@ public sealed class TestDbContext : DbContext, IPastaFlowDbContext
     public DbSet<InformeComprasInsight> InformesComprasInsight => Set<InformeComprasInsight>();
     public DbSet<Proveedor> Proveedores => Set<Proveedor>();
     public DbSet<ProveedorIngrediente> ProveedorIngredientes => Set<ProveedorIngrediente>();
+    public DbSet<Compra> Compras => Set<Compra>();
+    public DbSet<CompraLinea> CompraLineas => Set<CompraLinea>();
 
     /// <summary>
     /// Retorna una transacción no-operación. El proveedor InMemory no soporta
@@ -72,6 +74,26 @@ public sealed class TestDbContext : DbContext, IPastaFlowDbContext
             .HasOne(h => h.Producto)
             .WithMany()
             .HasForeignKey(h => h.ProductoId);
+
+        modelBuilder.Entity<DetalleVenta>()
+            .HasOne(d => d.Venta)
+            .WithMany(v => v.Detalles)
+            .HasForeignKey(d => d.VentaId);
+
+        modelBuilder.Entity<DetalleVenta>()
+            .HasOne(d => d.Producto)
+            .WithMany()
+            .HasForeignKey(d => d.ProductoId);
+
+        modelBuilder.Entity<Compra>()
+            .HasMany(c => c.Lineas)
+            .WithOne(l => l.Compra)
+            .HasForeignKey(l => l.CompraId);
+
+        modelBuilder.Entity<CompraLinea>()
+            .HasOne(l => l.Ingrediente)
+            .WithMany()
+            .HasForeignKey(l => l.IngredienteId);
 
         base.OnModelCreating(modelBuilder);
     }

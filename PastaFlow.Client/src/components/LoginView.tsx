@@ -1,5 +1,6 @@
 import { type FormEvent, useState } from 'react';
 import { useAuth, type AuthUser } from '../context/AuthContext';
+import { PRODUCT_CLIENT, PRODUCT_NAME } from '../lib/branding';
 
 interface LoginResponse {
   token: string;
@@ -67,8 +68,8 @@ export default function LoginView() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600 shadow-lg shadow-blue-600/30 mb-4">
             <span className="text-3xl leading-none">🍝</span>
           </div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">PastaFlow</h1>
-          <p className="text-gray-400 text-sm mt-1">Panel de Control · Iniciar Sesión</p>
+          <h1 className="text-3xl font-bold text-white tracking-tight">{PRODUCT_NAME}</h1>
+          <p className="text-gray-400 text-sm mt-1">{PRODUCT_CLIENT} · Iniciar sesión</p>
         </div>
 
         {/* Form card */}
@@ -138,7 +139,7 @@ export default function LoginView() {
         </div>
 
         <p className="text-center text-gray-600 text-xs mt-6">
-          PastaFlow © {new Date().getFullYear()} · Sistema de Gestión de Producción
+          {PRODUCT_NAME} © {new Date().getFullYear()} · {PRODUCT_CLIENT}
         </p>
       </div>
     </div>

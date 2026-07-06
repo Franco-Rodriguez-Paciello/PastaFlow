@@ -1,5 +1,9 @@
 # PastaFlow
 
+[![CI](https://github.com/Franco-Rodriguez-Paciello/PastaFlow/actions/workflows/ci.yml/badge.svg)](https://github.com/Franco-Rodriguez-Paciello/PastaFlow/actions/workflows/ci.yml)
+
+> **Impasto** es el nombre público del producto (desarrollado para el **Pastificio Don Franco**). El repositorio, namespaces y código conservan el nombre técnico *PastaFlow*.
+
 ERP para una fábrica de pastas frescas con venta por mostrador. Incluye producción, inventario, punto de venta y **funciones de IA** con arquitectura híbrida: los números y reglas de negocio se calculan en .NET; el LLM solo redacta recomendaciones sobre datos ya calculados.
 
 Proyecto full-stack pensado como producto real y como **portfolio técnico** (Clean Architecture, CQRS, .NET 10, React 19).
@@ -8,6 +12,8 @@ Proyecto full-stack pensado como producto real y como **portfolio técnico** (Cl
 
 | Módulo | Qué hace |
 |--------|----------|
+| **Hoja de producción** | Vista operativa del día: predicción + stock terminado + insumos necesarios; producir desde la misma pantalla |
+| **Ingreso de mercadería** | Registro de compras con sugerencias automáticas (faltantes de producción + stock crítico) |
 | **Planificación de producción** | Predicción de demanda por calendario + clima (Open-Meteo), backtesting con % de precisión, gráficos de tendencia |
 | **Asistente de recetas (IA)** | Sugiere recetas con ingredientes existentes o propuestos; permite refinar la sugerencia en conversación |
 | **Insights de compras (IA)** | Informe de reposición asistido por IA con historial |
@@ -86,20 +92,47 @@ Solo en **Development**, si no hay usuarios en la base:
 
 > Si ya tenés usuarios creados manualmente, el seeder no los sobrescribe. Para usar estas credenciales, vaciá la tabla `Usuarios` o usá una base nueva.
 
-## Recorrido demo (~2 minutos)
+## Flujo operario del día (~5 minutos)
+
+Circuito pensado para el mostrador: de la predicción a la venta, sin saltar entre pantallas innecesariamente.
+
+1. **Login** como `operario` / `operario123` (o `admin` para ver todo).
+2. **Hoja de Producción** (pantalla inicial del operario):
+   - Revisá qué productos faltan producir para mañana según predicción y stock terminado.
+   - En cada línea con faltante, usá **Producir** → confirmá en el modal (registra producción sin ir a otra vista).
+   - Si faltan insumos, **Registrar compra** lleva al módulo de ingreso con líneas prellenadas.
+3. **Ingreso mercadería** (solo Admin, o desde el botón de la hoja):
+   - **Cargar sugerencias** combina faltantes de la hoja + insumos bajo umbral crítico.
+   - Si no hay nada pendiente, la app muestra un mensaje claro (no abre un formulario vacío).
+   - **Nuevo ingreso** para compras manuales; opcionalmente actualizá el costo del insumo.
+4. **Punto de venta** — registrá ventas del mostrador.
+5. **Producción diaria** / **Historial** — consulta o registro detallado con costos congelados (auditoría).
+
+```text
+Hoja del día → Producir → (¿faltan insumos?) → Compras → Stock actualizado → POS
+```
+
+## Recorrido demo portfolio (~3 minutos)
 
 Ideal para mostrar el proyecto a alguien que no lo conoce:
 
-1. **Login** como `admin` / `admin123`
-2. **Planificación** (sidebar) — la pantalla más diferenciadora:
-   - Elegí **mañana** o un **sábado** / **día 29** y pulsá *Calcular demanda*
-   - Revisá el pronóstico de clima (Open-Meteo) y los factores en la tabla (ñoquis, fin de semana, clima)
-   - Mirá el **% de precisión** y el gráfico *predicción vs. real*
-   - Opcional: *Generar recomendación* (requiere API key de IA)
-3. **Creador de recetas** — pedí algo como *"ravioles de ricota y espinaca premium"* y luego *Aplicar ajuste* para refinar
-4. **Insights de compras** — generá un informe (también requiere IA)
+### Operación diaria (sin IA)
 
-**Tip:** Para ver el efecto “día 29 ñoquis”, planificá un 29 del mes. Para clima, elegí una fecha dentro de los próximos ~16 días (rango del pronóstico gratuito).
+1. **Login** como `admin` / `admin123`
+2. **Hoja de Producción** — revisá faltantes y producí una línea desde el modal
+3. **Ingreso mercadería** → **Cargar sugerencias** (o **Nuevo ingreso** si el stock ya alcanza)
+4. **Punto de venta** — registrá una venta de prueba
+
+### Diferenciadores técnicos (con Admin)
+
+5. **Planificación** — elegí **mañana**, un **sábado** o **día 29** y pulsá *Calcular demanda*:
+   - Pronóstico de clima (Open-Meteo) y factores en la tabla (ñoquis, fin de semana, clima)
+   - **% de precisión** y gráfico *predicción vs. real*
+   - Opcional: *Generar recomendación* (requiere API key de IA)
+6. **Creador de recetas** — pedí algo como *"ravioles de ricota y espinaca premium"* y *Aplicar ajuste*
+7. **Insights de compras** — generá un informe (requiere IA)
+
+**Tips:** Para el efecto “día 29 ñoquis”, planificá un 29 del mes. Para clima, elegí una fecha dentro de los próximos ~16 días. Si **Cargar sugerencias** no devuelve nada, bajá el stock de un insumo por debajo del umbral crítico en **Insumos**.
 
 ## Despliegue con Docker
 
@@ -194,6 +227,24 @@ PastaFlow/
 ├── PastaFlow.Client/          # React SPA
 └── PastaFlow.Tests/
 ```
+
+## Pruebas
+
+El proyecto incluye tests unitarios sobre la lógica de negocio crítica (sin base real ni APIs externas):
+
+```bash
+dotnet test PastaFlow.Tests/PastaFlow.Tests.csproj
+```
+
+| Área | Qué valida |
+|------|------------|
+| `PrediccionDemandaService` | Diferencia fin de semana vs. semana; factor día 29 |
+| `GetHojaProduccionDiaQueryHandler` | Cálculo de faltante a producir e insumos agregados |
+| `GetSugerenciasCompraQueryHandler` | Stock crítico y faltantes de producción |
+| `RegistrarCompraCommandHandler` | Suma de stock y actualización de costo |
+| `RegistrarProduccionCommandHandler` | Descuento de insumos y auditoría de costos |
+
+Los tests usan EF Core InMemory, NSubstitute para clima/predicción y FluentAssertions.
 
 ## Arquitectura de IA (resumen)
 

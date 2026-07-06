@@ -1,4 +1,5 @@
 import { useAuth } from '../context/AuthContext';
+import { PRODUCT_CLIENT, PRODUCT_NAME } from '../lib/branding';
 
 interface NavItem {
   label: string;
@@ -35,8 +36,8 @@ export default function SideBar({ currentView, onViewChange }: Props) {
   return (
     <aside className="min-h-screen w-64 bg-gray-900 text-white p-4 flex flex-col shrink-0">
       <div className="mb-8 px-2">
-        <h1 className="text-2xl font-bold tracking-tight">🍝 PastaFlow</h1>
-        <p className="text-xs text-gray-400 mt-1">Panel de Control</p>
+        <h1 className="text-2xl font-bold tracking-tight">{PRODUCT_NAME}</h1>
+        <p className="text-xs text-gray-400 mt-1">{PRODUCT_CLIENT}</p>
       </div>
 
       <nav className="flex flex-col gap-1 flex-1">

@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend (.NET)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore PastaFlow.sln
+
+      - name: Build
+        run: dotnet build PastaFlow.sln --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test PastaFlow.Tests/PastaFlow.Tests.csproj --configuration Release --no-build --verbosity normal
+
+  frontend:
+    name: Frontend (React)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: PastaFlow.Client/package-lock.json
+
+      - name: Install dependencies
+        working-directory: PastaFlow.Client
+        run: npm ci
+
+      - name: Build
+        working-directory: PastaFlow.Client
+        run: npm run build
